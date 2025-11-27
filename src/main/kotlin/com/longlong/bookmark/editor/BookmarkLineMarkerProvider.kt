@@ -1,0 +1,176 @@
+package com.longlong.bookmark.editor
+
+import com.intellij.codeInsight.daemon.LineMarkerInfo
+import com.intellij.codeInsight.daemon.LineMarkerProvider
+import com.intellij.openapi.editor.markup.GutterIconRenderer
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.longlong.bookmark.model.Bookmark
+import com.longlong.bookmark.model.BookmarkColor
+import com.longlong.bookmark.model.BookmarkStatus
+import com.longlong.bookmark.service.BookmarkService
+import com.longlong.bookmark.ui.dialog.EditBookmarkDialog
+import java.awt.*
+import java.awt.image.BufferedImage
+import javax.swing.Icon
+import javax.swing.ImageIcon
+
+/**
+ * 书签行标记提供者 - 在 Gutter 区域显示书签图标
+ */
+class BookmarkLineMarkerProvider : LineMarkerProvider {
+
+    override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
+        // 只处理文件级别的第一个元素，避免重复处理
+        if (element.parent !is PsiFile) return null
+
+        val project = element.project
+        val psiFile = element.containingFile ?: return null
+        val virtualFile = psiFile.virtualFile ?: return null
+        val document = FileDocumentManager.getInstance().getDocument(virtualFile) ?: return null
+
+        val bookmarkService = BookmarkService.getInstance(project)
+        val basePath = project.basePath ?: return null
+        val filePath = if (virtualFile.path.startsWith(basePath)) {
+            virtualFile.path.substring(basePath.length + 1)
+        } else {
+            virtualFile.path
+        }
+
+        val bookmarks = bookmarkService.getBookmarksByFile(filePath)
+        if (bookmarks.isEmpty()) return null
+
+        // 为第一个书签创建标记（用于触发整个文件的更新）
+        val firstBookmark = bookmarks.first()
+        val lineStartOffset = if (firstBookmark.startLine < document.lineCount) {
+            document.getLineStartOffset(firstBookmark.startLine)
+        } else {
+            return null
+        }
+
+        // 找到该行的第一个元素
+        val elementAtLine = psiFile.findElementAt(lineStartOffset) ?: return null
+
+        return createLineMarkerInfo(elementAtLine, firstBookmark, project)
+    }
+
+    override fun collectSlowLineMarkers(
+        elements: MutableList<out PsiElement>,
+        result: MutableCollection<in LineMarkerInfo<*>>
+    ) {
+        if (elements.isEmpty()) return
+
+        val firstElement = elements.firstOrNull() ?: return
+        val project = firstElement.project
+        val psiFile = firstElement.containingFile ?: return
+        val virtualFile = psiFile.virtualFile ?: return
+        val document = FileDocumentManager.getInstance().getDocument(virtualFile) ?: return
+
+        val bookmarkService = BookmarkService.getInstance(project)
+        val basePath = project.basePath ?: return
+        val filePath = if (virtualFile.path.startsWith(basePath)) {
+            virtualFile.path.substring(basePath.length + 1)
+        } else {
+            virtualFile.path
+        }
+
+        val bookmarks = bookmarkService.getBookmarksByFile(filePath)
+
+        bookmarks.forEach { bookmark ->
+            if (bookmark.startLine >= document.lineCount) return@forEach
+
+            val lineStartOffset = document.getLineStartOffset(bookmark.startLine)
+            val elementAtLine = psiFile.findElementAt(lineStartOffset)
+
+            if (elementAtLine != null) {
+                result.add(createLineMarkerInfo(elementAtLine, bookmark, project))
+            }
+        }
+    }
+
+    private fun createLineMarkerInfo(
+        element: PsiElement,
+        bookmark: Bookmark,
+        project: com.intellij.openapi.project.Project
+    ): LineMarkerInfo<PsiElement> {
+        val icon = createBookmarkIcon(bookmark)
+        val tooltipText = buildTooltip(bookmark)
+
+        return LineMarkerInfo(
+            element,
+            element.textRange,
+            icon,
+            { tooltipText },
+            { _, _ ->
+                // 点击跳转
+                BookmarkService.getInstance(project).navigateToBookmark(bookmark)
+            },
+            GutterIconRenderer.Alignment.LEFT,
+            { bookmark.getDisplayName() }
+        )
+    }
+
+    private fun createBookmarkIcon(bookmark: Bookmark): Icon {
+        val size = 12
+        val image = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+        val g2d = image.createGraphics()
+
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+        // 根据状态和颜色绘制图标
+        val color = when (bookmark.status) {
+            BookmarkStatus.MISSING -> Color.RED
+            BookmarkStatus.OUTDATED -> Color.ORANGE
+            BookmarkStatus.VALID -> Color.decode(bookmark.color.hexColor)
+        }
+
+        // 绘制书签形状
+        g2d.color = color
+        val path = java.awt.geom.Path2D.Double()
+        path.moveTo(2.0, 1.0)
+        path.lineTo(10.0, 1.0)
+        path.lineTo(10.0, 11.0)
+        path.lineTo(6.0, 8.0)
+        path.lineTo(2.0, 11.0)
+        path.closePath()
+        g2d.fill(path)
+
+        // 如果失效，添加 X 标记
+        if (bookmark.status == BookmarkStatus.MISSING) {
+            g2d.color = Color.WHITE
+            g2d.stroke = BasicStroke(1.5f)
+            g2d.drawLine(4, 3, 8, 7)
+            g2d.drawLine(8, 3, 4, 7)
+        }
+
+        g2d.dispose()
+        return ImageIcon(image)
+    }
+
+    private fun buildTooltip(bookmark: Bookmark): String {
+        return buildString {
+            append("<html>")
+            append("<b>🐉 ${bookmark.alias}</b><br>")
+
+            when (bookmark.status) {
+                BookmarkStatus.VALID -> append("<font color='green'>✓ 有效</font><br>")
+                BookmarkStatus.MISSING -> append("<font color='red'>✗ 失效</font><br>")
+                BookmarkStatus.OUTDATED -> append("<font color='orange'>⚠ 可能过期</font><br>")
+            }
+
+            if (bookmark.tags.isNotEmpty()) {
+                append("标签: ${bookmark.tags.joinToString(", ")}<br>")
+            }
+
+            if (bookmark.comment.isNotEmpty()) {
+                append("注释: ${bookmark.comment}<br>")
+            }
+
+            append("<hr>")
+            append("<pre>${bookmark.codeSnippet.take(150)}</pre>")
+            append("<br><i>点击跳转</i>")
+            append("</html>")
+        }
+    }
+}

@@ -1,0 +1,170 @@
+<idea-plugin>
+    <id>com.longlong.bookmark</id>
+    <name>龙龙书签 · LongLong Bookmark</name>
+    <version>1.0.0</version>
+    <vendor email="support@longlong.dev" url="https://github.com/longlong-bookmark">LongLong Dev</vendor>
+
+    <description><![CDATA[
+    <h2>🐉 龙龙书签 · LongLong Bookmark</h2>
+    <p>JetBrains 增强代码书签系统 - 让代码导航更高效！</p>
+
+    <h3>核心功能：</h3>
+    <ul>
+        <li>✨ <b>动态书签</b> - 代码变动自动跟踪位置</li>
+        <li>🏷️ <b>标签系统</b> - 多标签分类管理书签</li>
+        <li>🎨 <b>颜色标记</b> - 视觉化区分不同类型书签</li>
+        <li>📝 <b>注释备注</b> - 添加详细说明和上下文</li>
+        <li>🗺️ <b>导览图</b> - 可视化代码流程和调用关系</li>
+        <li>📤 <b>导入导出</b> - JSON/Markdown/Mermaid 格式支持</li>
+        <li>🔍 <b>智能搜索</b> - 快速定位书签</li>
+    </ul>
+
+    <h3>适用场景：</h3>
+    <ul>
+        <li>代码审查时标记重点</li>
+        <li>学习代码时构建阅读路线</li>
+        <li>开发调试时记录关键位置</li>
+        <li>运维排查时快速定位</li>
+        <li>与 AI 协作分析代码</li>
+    </ul>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>v1.0.0</h3>
+    <ul>
+        <li>初始版本发布</li>
+        <li>书签核心功能：添加、删除、跳转、动态跟踪</li>
+        <li>标签系统：多标签、颜色、分组</li>
+        <li>导览图系统：Main Flow、Tag Flow、Custom Flow</li>
+        <li>导入导出：JSON、Markdown、Mermaid</li>
+    </ul>
+    ]]></change-notes>
+
+    <idea-version since-build="232" until-build="243.*"/>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 项目级书签服务 -->
+        <projectService
+                serviceImplementation="com.longlong.bookmark.service.BookmarkService"/>
+
+        <!-- 项目级标签服务 -->
+        <projectService
+                serviceImplementation="com.longlong.bookmark.service.TagService"/>
+
+        <!-- 项目级导览图服务 -->
+        <projectService
+                serviceImplementation="com.longlong.bookmark.service.DiagramService"/>
+
+        <!-- 书签持久化存储 -->
+        <projectService
+                serviceImplementation="com.longlong.bookmark.storage.BookmarkStorage"/>
+
+        <!-- 工具窗口 -->
+        <toolWindow
+                id="龙龙书签"
+                anchor="left"
+                secondary="true"
+                icon="/icons/bookmark_tool.svg"
+                factoryClass="com.longlong.bookmark.ui.BookmarkToolWindowFactory"/>
+
+        <!-- Gutter Icon 提供者 -->
+        <codeInsight.lineMarkerProvider
+                language=""
+                implementationClass="com.longlong.bookmark.editor.BookmarkLineMarkerProvider"/>
+
+        <!-- 编辑器监听器 -->
+        <editorFactoryListener
+                implementation="com.longlong.bookmark.editor.BookmarkEditorListener"/>
+
+        <!-- 文件监听器 -->
+        <projectService
+                serviceImplementation="com.longlong.bookmark.service.FileChangeListener"/>
+
+        <!-- 通知组 -->
+        <notificationGroup
+                id="LongLong Bookmark"
+                displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <!-- 主菜单组 -->
+        <group id="LongLongBookmark.MainMenu"
+               text="龙龙书签"
+               description="LongLong Bookmark Actions"
+               popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </group>
+
+        <!-- 添加书签 -->
+        <action id="LongLongBookmark.AddBookmark"
+                class="com.longlong.bookmark.action.AddBookmarkAction"
+                text="添加龙龙书签"
+                description="在当前位置添加书签"
+                icon="/icons/add_bookmark.svg">
+            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="first"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift B"/>
+        </action>
+
+        <!-- 快速添加书签（无对话框） -->
+        <action id="LongLongBookmark.QuickAddBookmark"
+                class="com.longlong.bookmark.action.QuickAddBookmarkAction"
+                text="快速添加书签"
+                description="快速添加书签（无对话框）"
+                icon="/icons/quick_add.svg">
+            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
+                          relative-to-action="LongLongBookmark.AddBookmark"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt B"/>
+        </action>
+
+        <!-- 显示书签列表 -->
+        <action id="LongLongBookmark.ShowBookmarks"
+                class="com.longlong.bookmark.action.ShowBookmarksAction"
+                text="显示书签列表"
+                description="打开书签工具窗口"
+                icon="/icons/bookmark_list.svg">
+            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
+                          relative-to-action="LongLongBookmark.QuickAddBookmark"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift M"/>
+        </action>
+
+        <!-- 打开导览图 -->
+        <action id="LongLongBookmark.OpenDiagram"
+                class="com.longlong.bookmark.action.OpenDiagramAction"
+                text="打开导览图"
+                description="打开书签导览图"
+                icon="/icons/diagram.svg">
+            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
+                          relative-to-action="LongLongBookmark.ShowBookmarks"/>
+        </action>
+
+        <!-- 导出 -->
+        <action id="LongLongBookmark.Export"
+                class="com.longlong.bookmark.action.ExportAction"
+                text="导出书签"
+                description="导出书签数据"
+                icon="/icons/export.svg">
+            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
+                          relative-to-action="LongLongBookmark.OpenDiagram"/>
+        </action>
+
+        <!-- 导入 -->
+        <action id="LongLongBookmark.Import"
+                class="com.longlong.bookmark.action.ImportAction"
+                text="导入书签"
+                description="导入书签数据"
+                icon="/icons/import.svg">
+            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
+                          relative-to-action="LongLongBookmark.Export"/>
+        </action>
+    </actions>
+
+    <projectListeners>
+        <listener
+                class="com.longlong.bookmark.service.ProjectOpenListener"
+                topic="com.intellij.openapi.project.ProjectManagerListener"/>
+    </projectListeners>
+</idea-plugin>
