@@ -29,7 +29,18 @@ intellijPlatform {
     pluginConfiguration {
         ideaVersion {
             sinceBuild = "232"
-            untilBuild = "243.*"
+            untilBuild = "252.*"
+        }
+    }
+    
+    // 插件验证配置
+    // 注意：verifyPlugin 需要下载 IDE，如遇网络问题可跳过
+    // 直接使用 ./gradlew build buildPlugin 即可打包
+    pluginVerification {
+        ides {
+            // 如需验证，取消注释以下任一行：
+            // recommended()  // 自动下载推荐版本（需要稳定网络）
+            // local("/Applications/IntelliJ IDEA.app")  // 使用本地安装的 IDE
         }
     }
     

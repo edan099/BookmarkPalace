@@ -15,7 +15,7 @@ class DiagramEditorSettings : PersistentStateComponent<DiagramEditorSettings.Sta
     private var myState = State()
 
     data class State(
-        var useDrawioEditor: Boolean = false, // 默认使用原生 Swing 编辑器
+        var useDrawioEditor: Boolean = true, // 默认使用 Draw.io 编辑器
         var drawioUrl: String = "https://embed.diagrams.net/" // Draw.io Embed URL
     )
 

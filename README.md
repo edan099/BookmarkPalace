@@ -22,8 +22,8 @@
 
 | 特性 | 描述 |
 |------|------|
+| 🗺️ **可视化导览图** | 书签节点可在图中自由放置，串联代码流程，让代码导航更高效，帮助理解代码 |
 | 🎯 **智能追踪** | 基于 RangeMarker 技术，代码重构/编辑后书签位置自动更新 |
-| 🗺️ **双引擎导览图** | Swing 原生编辑器 + Draw.io jCEF 专业编辑器可切换 |
 | 🌍 **中英双语** | 完整的国际化支持，一键切换语言 |
 | 🎨 **9色标记** | 视觉化书签分类，一眼识别重要程度 |
 | 📤 **AI友好导出** | JSON/Markdown/Mermaid 格式，可直接与 AI 协作分析 |
@@ -43,7 +43,7 @@
 - **Gutter 图标** - 编辑器边栏显示书签标记，一目了然
 
 ### 🗺️ 导览图系统（独家功能）
-- **双编辑器模式** - 原生 Swing（轻量快速）+ Draw.io jCEF（专业功能）可切换
+- **可视化编排** - 书签节点自由放置，构建代码导航地图
 - **多种视图** - 主流程图、标签视图、自定义视图
 - **丝滑操作** - 从节点边缘中点拖拽即可创建连线
 - **画布缩放** - 滚轮缩放，支持 25%-300% 缩放
@@ -78,7 +78,6 @@
 2. **快速添加**: `Ctrl+Alt+B` 无对话框快速添加/删除
 3. **查看书签**: `Ctrl+Shift+M` 或左侧工具栏 → BookmarkPalace
 4. **打开导览图**: 工具菜单 → BookmarkPalace → 打开导览图
-5. **切换编辑器**: 工具菜单 → BookmarkPalace → 切换导览图编辑器（Swing ↔ Draw.io）
 
 ## ⌨️ 快捷键
 
@@ -117,32 +116,14 @@
 
 ## 🎨 导览图编辑器
 
-### 原生 Swing 编辑器（默认）
-- ✅ 轻量级，快速启动
-- ✅ 无需网络连接
-- ✅ 低内存占用（~10MB）
-- ✅ 基础图形功能完整
-- 适合快速草图和简单流程图
-
-### Draw.io jCEF 编辑器（可选）
+### Draw.io 编辑器
 - ✅ 专业图表编辑能力
 - ✅ 丰富的形状库（100+ 种）
 - ✅ 高级样式和主题
 - ✅ 自动布局和对齐
 - ✅ 多格式导出（PNG、SVG、PDF）
-- ⚠️ 需要 IntelliJ IDEA 2020.2+（jCEF 支持）
-- ⚠️ 需要网络连接（加载 Draw.io Embed）
-- ⚠️ 较高内存占用（~50MB）
-- 适合专业流程图和复杂架构图
-
-### 切换方式
-```
-工具菜单 → BookmarkPalace → 切换导览图编辑器
-```
-
-切换后需要重新打开导览图文件。
-
-> 💡 **提示**: 查看完整的 Draw.io 集成文档 → [DRAWIO_INTEGRATION.md](DRAWIO_INTEGRATION.md)
+- ✅ 书签节点一键添加到画布
+- 适合构建代码导航地图和架构图
 
 ## 📋 导出格式示例
 
@@ -210,14 +191,14 @@ flowchart TD
 - 导览图系统：Main Flow、Tag Flow、Custom Flow
 - 导入导出：JSON、Markdown、Mermaid
 - 中英文国际化支持
-- 双编辑器导览图（Swing + Draw.io jCEF）
+- Draw.io 导览图编辑器
 
 ## 🛠️ 技术栈
 
 - **语言**: Kotlin 1.9
 - **构建**: Gradle 8.5 + IntelliJ Platform Plugin 2.1.0
 - **最低版本**: IntelliJ IDEA 2023.2 (Build 232)
-- **最高版本**: IntelliJ IDEA 2024.3.x (Build 243.*)
+- **最高版本**: IntelliJ IDEA 2025.2.x (Build 252.*)
 - **JDK**: 17+
 
 ## 🤝 贡献
@@ -230,6 +211,42 @@ flowchart TD
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 打开 Pull Request
 
+## ☕ 打赏与支持
+
+如果这个插件对您有帮助，欢迎请作者喝杯咖啡！您的支持是我持续更新的动力！
+
+### 打赏方式
+
+| 金额 | 说明 |
+|------|------|
+| ¥1.88 | 一根棒棒糖 🍭 |
+| ¥18.88 | 一杯咖啡 ☕ |
+| ¥88.88 | 请客吃饭 🍜 |
+| 自定义 | 随心打赏 💝 |
+
+<p align="center">
+  <img src="src/main/resources/donate/微信1块88.jpg" width="180" alt="微信打赏">
+  <img src="src/main/resources/donate/支付宝1块88.jpg" width="180" alt="支付宝打赏">
+</p>
+
+<p align="center">
+  <sub>微信 WeChat | 支付宝 Alipay</sub>
+</p>
+
+> 💡 **提示**: 在插件菜单中选择 `Tools → 书签宫殿 → ☕ 打赏与联系` 可以查看更多打赏金额选项和联系方式。
+
+### 联系方式
+
+| 渠道 | 信息 |
+|------|------|
+| 📧 邮箱 | longlongcoder@qq.com |
+| 🐙 GitHub | [github.com/longlongcoder](https://github.com/longlongcoder) |
+| 📺 抖音 | 扫码关注（见插件内） |
+
+<p align="center">
+  <img src="src/main/resources/donate/抖音联系.jpg" width="150" alt="抖音联系">
+</p>
+
 ## 📄 许可证
 
 MIT License - 详见 [LICENSE](LICENSE) 文件
@@ -238,5 +255,6 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 <p align="center">
   <strong>🏰 BookmarkPalace</strong> - 让代码导航更高效！<br>
-  <sub>Made with ❤️ for developers</sub>
+  <sub>Made with ❤️ by 龙龙 longlongcoder</sub><br>
+  <sub>感谢每一位支持者！</sub>
 </p>

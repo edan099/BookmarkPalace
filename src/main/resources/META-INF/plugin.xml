@@ -5,31 +5,30 @@
     <!-- 资源包，用于国际化 -->
     <resource-bundle>messages.LongLongBookmarkBundle</resource-bundle>
     <version>1.0.0</version>
-    <vendor email="support@bookmarkpalace.dev" url="https://github.com/bookmark-palace">BookmarkPalace</vendor>
+    <vendor email="longlongcoder@qq.com" url="https://github.com/longlongcoder">龙龙 longlongcoder</vendor>
 
     <description><![CDATA[
     <h2>🏰 BookmarkPalace · 书签宫殿</h2>
-    <p>JetBrains 增强代码书签系统 - 让代码导航更高效！</p>
+    <p>JetBrains 增强代码书签系统 - 让代码导航更高效，帮助理解代码！</p>
 
-    <h3>核心功能：</h3>
+    <h3>🌟 核心亮点：</h3>
     <ul>
-        <li>✨ <b>动态书签</b> - 代码变动自动跟踪位置</li>
-        <li>🏷️ <b>标签系统</b> - 多标签分类管理书签</li>
-        <li>🎨 <b>颜色标记</b> - 视觉化区分不同类型书签</li>
-        <li>📝 <b>注释备注</b> - 添加详细说明和上下文</li>
-        <li>🗺️ <b>导览图</b> - 可视化代码流程和调用关系</li>
-        <li>📤 <b>导入导出</b> - JSON/Markdown/Mermaid 格式支持</li>
-        <li>🔍 <b>智能搜索</b> - 快速定位书签</li>
+        <li>🗺️ <b>可视化导览图</b> - 书签节点可在图中自由放置，串联代码流程</li>
+        <li>✨ <b>智能追踪</b> - 基于 RangeMarker，代码变动后书签位置自动更新</li>
+        <li>🎨 <b>9色标记</b> - 视觉化区分不同类型书签</li>
+        <li>🌍 <b>中英双语</b> - 完整国际化支持</li>
+        <li>📤 <b>AI友好导出</b> - JSON/Markdown/Mermaid 格式支持</li>
     </ul>
 
     <h3>适用场景：</h3>
     <ul>
         <li>代码审查时标记重点</li>
-        <li>学习代码时构建阅读路线</li>
+        <li>学习源码时构建阅读路线</li>
         <li>开发调试时记录关键位置</li>
-        <li>运维排查时快速定位</li>
         <li>与 AI 协作分析代码</li>
     </ul>
+    
+    <p><i>Made by 龙龙 longlongcoder</i></p>
     ]]></description>
 
     <change-notes><![CDATA[
@@ -43,7 +42,7 @@
     </ul>
     ]]></change-notes>
 
-    <idea-version since-build="232" until-build="243.*"/>
+    <idea-version since-build="232" until-build="252.*"/>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.lang</depends>
@@ -117,9 +116,15 @@
         <editorTabTitleProvider
                 implementation="com.longlong.bookmark.ui.diagram.DiagramTabTitleProvider"/>
         
-        <!-- Alt+Enter 意图动作：添加书签 -->
+        <!-- Alt+Enter 意图动作：添加书签（带对话框） -->
         <intentionAction>
             <className>com.longlong.bookmark.action.AddBookmarkIntention</className>
+            <category>BookmarkPalace</category>
+        </intentionAction>
+        
+        <!-- Alt+Enter 意图动作：快速添加书签 -->
+        <intentionAction>
+            <className>com.longlong.bookmark.action.QuickAddBookmarkIntention</className>
             <category>BookmarkPalace</category>
         </intentionAction>
     </extensions>
@@ -189,22 +194,21 @@
                           relative-to-action="BookmarkPalace.Export"/>
         </action>
 
-        <!-- 切换导览图编辑器 -->
-        <action id="BookmarkPalace.ToggleDiagramEditor"
-                class="com.longlong.bookmark.action.ToggleDiagramEditorAction"
-                text="切换导览图编辑器"
-                description="在原生 Swing 和 Draw.io jCEF 编辑器之间切换">
-            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
-                          relative-to-action="BookmarkPalace.Import"/>
-        </action>
-
         <!-- 诊断导览图编辑器 -->
         <action id="BookmarkPalace.DiagnoseDiagramEditor"
                 class="com.longlong.bookmark.action.DiagnoseDiagramEditorAction"
                 text="诊断导览图编辑器"
                 description="检查 Draw.io 编辑器配置和 jCEF 支持状态">
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
-                          relative-to-action="BookmarkPalace.ToggleDiagramEditor"/>
+                          relative-to-action="BookmarkPalace.Import"/>
+        </action>
+
+        <!-- 打赏与联系 -->
+        <action id="BookmarkPalace.Donate"
+                class="com.longlong.bookmark.action.DonateAction"
+                icon="/icons/donate.svg">
+            <override-text bundle="messages.LongLongBookmarkBundle" key="action.donate"/>
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="last"/>
         </action>
     </actions>
 

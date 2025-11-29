@@ -129,10 +129,10 @@ chmod +x gradlew
 
 #### 导览图
 - [ ] 打开导览图（工具菜单 → BookmarkPalace → 打开导览图）
-- [ ] 添加节点
+- [ ] 添加书签节点到画布
 - [ ] 创建连线
 - [ ] 缩放画布
-- [ ] 切换编辑器（Swing ↔ Draw.io）
+- [ ] 节点拖拽和编辑
 
 #### 导入导出
 - [ ] 导出 JSON
@@ -408,5 +408,6 @@ allprojects {
 ---
 
 <p align="center">
-  <strong>🏰 BookmarkPalace</strong> - 让代码导航更高效！
+  <strong>🏰 BookmarkPalace</strong> - 让代码导航更高效！<br>
+  <sub>Made with ❤️ by 龙龙 longlongcoder</sub>
 </p>
