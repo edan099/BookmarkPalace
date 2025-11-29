@@ -496,6 +496,37 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
     }
 
     /**
+     * 聚焦到指定书签（用于 Gutter 图标点击）
+     */
+    fun focusBookmark(bookmark: Bookmark) {
+        // 刷新树形结构确保书签存在
+        refreshTree()
+        
+        // 遍历树节点找到对应的书签
+        val root = treeModel.root as DefaultMutableTreeNode
+        var bookmarkNode: DefaultMutableTreeNode? = null
+        
+        for (i in 0 until root.childCount) {
+            val groupNode = root.getChildAt(i) as DefaultMutableTreeNode
+            for (j in 0 until groupNode.childCount) {
+                val node = groupNode.getChildAt(j) as DefaultMutableTreeNode
+                if (node.userObject is Bookmark && (node.userObject as Bookmark).id == bookmark.id) {
+                    bookmarkNode = node
+                    break
+                }
+            }
+            if (bookmarkNode != null) break
+        }
+        
+        // 如果找到节点，选中并滚动到可见区域
+        if (bookmarkNode != null) {
+            val path = javax.swing.tree.TreePath(treeModel.getPathToRoot(bookmarkNode))
+            tree.selectionPath = path
+            tree.scrollPathToVisible(path)
+        }
+    }
+
+    /**
      * 分组节点数据类
      */
     data class GroupNode(val name: String, val key: String)

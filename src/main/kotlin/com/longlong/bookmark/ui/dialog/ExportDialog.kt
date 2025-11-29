@@ -73,7 +73,7 @@ class ExportDialog(private val project: Project) : DialogWrapper(project) {
             format.extension
         )
 
-        val defaultFileName = "longlong-bookmarks.${format.extension}"
+        val defaultFileName = "bookmarkpalace-bookmarks.${format.extension}"
         val fileWrapper = FileChooserFactory.getInstance()
             .createSaveFileDialog(descriptor, project)
             .save(defaultFileName)

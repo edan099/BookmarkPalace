@@ -7,8 +7,8 @@ import com.intellij.openapi.components.*
  */
 @Service
 @State(
-    name = "LongLongBookmarkDiagramEditorSettings",
-    storages = [Storage("longlong-bookmark-diagram-editor.xml")]
+    name = "BookmarkPalaceDiagramEditorSettings",
+    storages = [Storage("bookmarkpalace-diagram-editor.xml")]
 )
 class DiagramEditorSettings : PersistentStateComponent<DiagramEditorSettings.State> {
 

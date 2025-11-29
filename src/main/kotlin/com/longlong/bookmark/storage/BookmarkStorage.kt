@@ -309,8 +309,8 @@ class DiagramConnectionStorageItem {
  */
 @Service(Service.Level.PROJECT)
 @State(
-    name = "LongLongBookmarkStorage",
-    storages = [Storage("longlong-bookmarks.xml")]
+    name = "BookmarkPalaceStorage",
+    storages = [Storage("bookmarkpalace-bookmarks.xml")]
 )
 class BookmarkStorage : PersistentStateComponent<BookmarkState> {
     private var state = BookmarkState()

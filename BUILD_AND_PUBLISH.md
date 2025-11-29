@@ -42,7 +42,7 @@ echo $JAVA_HOME
 ```bash
 # 1. 克隆项目
 git clone <repository-url>
-cd idea书签
+cd BookmarkPalace
 
 # 2. 授予 gradlew 执行权限 (macOS/Linux)
 chmod +x gradlew

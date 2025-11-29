@@ -91,7 +91,7 @@
 
 书签数据存储在项目 `.idea` 目录下：
 ```
-.idea/longlong-bookmarks.xml
+.idea/bookmarkpalace-bookmarks.xml
 ```
 
 ## 🎨 支持的颜色

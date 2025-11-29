@@ -4,11 +4,13 @@ import com.intellij.codeInsight.daemon.LineMarkerInfo
 import com.intellij.codeInsight.daemon.LineMarkerProvider
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.longlong.bookmark.model.Bookmark
 import com.longlong.bookmark.model.BookmarkStatus
 import com.longlong.bookmark.service.BookmarkService
+import com.longlong.bookmark.ui.BookmarkToolWindowPanel
 import java.awt.*
 import java.awt.image.BufferedImage
 import javax.swing.Icon
@@ -85,8 +87,15 @@ class BookmarkLineMarkerProvider : LineMarkerProvider {
             icon,
             { tooltipText },
             { _, _ ->
-                // 点击跳转到第一个书签
-                BookmarkService.getInstance(project).navigateToBookmark(primaryBookmark)
+                // 点击打开 BookmarkPalace 工具窗口并聚焦到对应书签
+                val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("BookmarkPalace")
+                toolWindow?.show {
+                    // 获取工具窗口的内容面板并聚焦到书签
+                    val contentManager = toolWindow.contentManager
+                    val content = contentManager.contents.firstOrNull()
+                    val panel = content?.component as? BookmarkToolWindowPanel
+                    panel?.focusBookmark(primaryBookmark)
+                }
             },
             GutterIconRenderer.Alignment.LEFT,
             { if (allBookmarks.size > 1) "${primaryBookmark.getDisplayName()} (+${allBookmarks.size - 1})" else primaryBookmark.getDisplayName() }
@@ -107,23 +116,32 @@ class BookmarkLineMarkerProvider : LineMarkerProvider {
             BookmarkStatus.VALID -> Color.decode(bookmark.color.hexColor)
         }
 
-        // 绘制书签形状
+        // 绘制宫殿风格的图标（城堡形状）
         g2d.color = color
-        val path = java.awt.geom.Path2D.Double()
-        path.moveTo(2.0, 1.0)
-        path.lineTo(10.0, 1.0)
-        path.lineTo(10.0, 11.0)
-        path.lineTo(6.0, 8.0)
-        path.lineTo(2.0, 11.0)
-        path.closePath()
-        g2d.fill(path)
+        
+        // 主体
+        g2d.fillRect(1, 5, 10, 6)
+        
+        // 塔楼
+        g2d.fillRect(1, 2, 3, 3)
+        g2d.fillRect(8, 2, 3, 3)
+        
+        // 城垛
+        g2d.fillRect(1, 2, 1, 1)
+        g2d.fillRect(3, 2, 1, 1)
+        g2d.fillRect(8, 2, 1, 1)
+        g2d.fillRect(10, 2, 1, 1)
+        
+        // 门
+        g2d.color = Color.WHITE
+        g2d.fillRect(5, 7, 2, 4)
 
         // 如果失效，添加 X 标记
         if (bookmark.status == BookmarkStatus.MISSING) {
-            g2d.color = Color.WHITE
+            g2d.color = Color.RED
             g2d.stroke = BasicStroke(1.5f)
-            g2d.drawLine(4, 3, 8, 7)
-            g2d.drawLine(8, 3, 4, 7)
+            g2d.drawLine(3, 3, 9, 9)
+            g2d.drawLine(9, 3, 3, 9)
         }
 
         g2d.dispose()
@@ -154,7 +172,7 @@ class BookmarkLineMarkerProvider : LineMarkerProvider {
                 }
             }
             
-            append("<br><i>点击跳转</i>")
+            append("<br><i>🏰 点击打开书签宫殿</i>")
             append("</html>")
         }
     }

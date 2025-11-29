@@ -5,4 +5,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "longlong-bookmark"
+rootProject.name = "BookmarkPalace"
