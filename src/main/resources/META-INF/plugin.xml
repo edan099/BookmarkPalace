@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>com.longlong.bookmark</id>
-    <name>BookmarkPalace · 书签宫殿</name>
+    <name>BookmarkPalace</name>
     
     <!-- 资源包，用于国际化 -->
     <resource-bundle>messages.LongLongBookmarkBundle</resource-bundle>
@@ -8,8 +8,9 @@
     <vendor email="edan_d@qq.com">Edan</vendor>
 
     <description><![CDATA[
-    <h2>🏰 BookmarkPalace · 书签宫殿</h2>
-    <p>JetBrains 增强代码书签系统 - 让代码导航更高效，帮助理解代码！</p>
+    <p>BookmarkPalace is an enhanced code bookmark system for JetBrains IDEs - making code navigation more efficient and helping you understand code better!</p>
+    
+    <p><b>书签宫殿</b> - JetBrains 增强代码书签系统，让代码导航更高效，帮助理解代码！</p>
 
     <h3>🌟 核心亮点：</h3>
     <ul>
