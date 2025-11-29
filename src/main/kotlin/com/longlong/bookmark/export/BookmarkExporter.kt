@@ -189,13 +189,12 @@ class BookmarkExporter(private val project: Project) {
             // 节点定义
             diagram.nodes.forEach { node ->
                 val nodeId = "N${node.id.take(8)}"
-                val shape = when (node.nodeType) {
-                    NodeType.START -> "([${node.label}])"
-                    NodeType.END -> "([${node.label}])"
-                    NodeType.DECISION -> "{${node.label}}"
-                    NodeType.LOOP -> "{{${node.label}}}"
-                    NodeType.EXCEPTION -> "((${node.label}))"
-                    NodeType.NORMAL -> "[${node.label}]"
+                val shape = when (node.shape) {
+                    NodeShape.RECTANGLE -> "[${node.label}]"
+                    NodeShape.ROUNDED_RECT -> "([${node.label}])"
+                    NodeShape.CIRCLE -> "((${node.label}))"
+                    NodeShape.ELLIPSE -> "([${node.label}])"
+                    NodeShape.DIAMOND -> "{${node.label}}"
                 }
                 sb.appendLine("    $nodeId$shape")
             }
@@ -207,17 +206,10 @@ class BookmarkExporter(private val project: Project) {
                 val sourceId = "N${conn.sourceNodeId.take(8)}"
                 val targetId = "N${conn.targetNodeId.take(8)}"
                 val arrow = when (conn.connectionType) {
-                    ConnectionType.NORMAL -> "-->"
-                    ConnectionType.CONDITION_YES -> "-->|yes|"
-                    ConnectionType.CONDITION_NO -> "-->|no|"
-                    ConnectionType.LOOP -> "-.->|loop|"
-                    ConnectionType.EXCEPTION -> "-.->|exception|"
+                    ConnectionType.NORMAL, ConnectionType.ARROW -> "-->"
+                    ConnectionType.DASHED -> "-.->"
                 }
-                val label = if (conn.label.isNotEmpty() && conn.connectionType == ConnectionType.NORMAL) {
-                    "-->|${conn.label}|"
-                } else {
-                    arrow
-                }
+                val label = if (conn.label.isNotEmpty()) "-->|${conn.label}|" else arrow
                 sb.appendLine("    $sourceId $label $targetId")
             }
 

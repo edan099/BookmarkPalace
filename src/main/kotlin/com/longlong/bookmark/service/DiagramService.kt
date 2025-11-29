@@ -209,25 +209,6 @@ class DiagramService(private val project: Project) {
     }
 
     /**
-     * 自动布局
-     */
-    fun autoLayout(diagramId: String, layout: DiagramLayout = DiagramLayout.TREE) {
-        val diagram = getDiagram(diagramId) ?: return
-
-        when (layout) {
-            DiagramLayout.TREE -> applyTreeLayout(diagram)
-            DiagramLayout.DAG -> applyDagLayout(diagram)
-            DiagramLayout.HORIZONTAL -> applyHorizontalLayout(diagram)
-            DiagramLayout.FORCE -> applyForceLayout(diagram)
-        }
-
-        diagram.layout = layout
-        diagram.touch()
-        saveToStorage()
-        notifyDiagramUpdated(diagram)
-    }
-
-    /**
      * 添加变更监听器
      */
     fun addChangeListener(listener: DiagramChangeListener) {
@@ -239,69 +220,6 @@ class DiagramService(private val project: Project) {
      */
     fun removeChangeListener(listener: DiagramChangeListener) {
         listeners.remove(listener)
-    }
-
-    // === 布局算法 ===
-
-    private fun applyTreeLayout(diagram: Diagram) {
-        val nodes = diagram.nodes
-        if (nodes.isEmpty()) return
-
-        // 找到没有入边的节点作为根节点
-        val nodeIds = nodes.map { it.id }.toSet()
-        val hasIncoming = diagram.connections.map { it.targetNodeId }.toSet()
-        val roots = nodes.filter { it.id !in hasIncoming }
-
-        if (roots.isEmpty() && nodes.isNotEmpty()) {
-            // 如果没有根节点，选择第一个节点
-            layoutSubtree(diagram, nodes.first(), 0, 0, mutableSetOf())
-        } else {
-            var yOffset = 0.0
-            roots.forEach { root ->
-                layoutSubtree(diagram, root, 0, yOffset.toInt(), mutableSetOf())
-                yOffset += 150
-            }
-        }
-    }
-
-    private fun layoutSubtree(diagram: Diagram, node: DiagramNode, level: Int, yIndex: Int, visited: MutableSet<String>) {
-        if (node.id in visited) return
-        visited.add(node.id)
-
-        node.x = level * 220.0 + 50
-        node.y = yIndex * 80.0 + 50
-
-        val children = diagram.getOutgoingConnections(node.id)
-            .mapNotNull { diagram.getNode(it.targetNodeId) }
-            .filter { it.id !in visited }
-
-        children.forEachIndexed { index, child ->
-            layoutSubtree(diagram, child, level + 1, yIndex + index, visited)
-        }
-    }
-
-    private fun applyDagLayout(diagram: Diagram) {
-        // 简化的DAG布局，类似树形但处理多入边
-        applyTreeLayout(diagram)
-    }
-
-    private fun applyHorizontalLayout(diagram: Diagram) {
-        diagram.nodes.forEachIndexed { index, node ->
-            node.x = index * 200.0 + 50
-            node.y = 100.0
-        }
-    }
-
-    private fun applyForceLayout(diagram: Diagram) {
-        // 简化的力导向布局
-        val nodes = diagram.nodes
-        if (nodes.isEmpty()) return
-
-        // 初始化随机位置
-        nodes.forEachIndexed { index, node ->
-            node.x = (index % 5) * 180.0 + 50 + (Math.random() * 50)
-            node.y = (index / 5) * 120.0 + 50 + (Math.random() * 50)
-        }
     }
 
     // === 私有方法 ===

@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.DumbAware
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.service.BookmarkService
 
 /**
@@ -39,6 +40,7 @@ class QuickAddBookmarkAction : AnAction(), DumbAware {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR)
         e.presentation.isEnabledAndVisible = editor != null
+        e.presentation.text = Messages.quickAdd
     }
 
     private fun showNotification(project: com.intellij.openapi.project.Project, content: String, type: NotificationType) {

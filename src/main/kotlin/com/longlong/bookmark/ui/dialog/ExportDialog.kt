@@ -18,7 +18,7 @@ import javax.swing.*
  */
 class ExportDialog(private val project: Project) : DialogWrapper(project) {
 
-    private val formatCombo = JComboBox(ExportFormat.entries.toTypedArray())
+    private val formatCombo = JComboBox(ExportFormat.values())
     private val includeBookmarksCheck = JCheckBox("书签", true)
     private val includeDiagramsCheck = JCheckBox("导览图", true)
     private val includeTagsCheck = JCheckBox("标签配置", true)

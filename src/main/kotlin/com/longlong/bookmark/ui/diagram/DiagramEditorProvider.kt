@@ -1,15 +1,19 @@
 package com.longlong.bookmark.ui.diagram
 
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.testFramework.LightVirtualFile
 import com.intellij.ui.components.JBList
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.model.Bookmark
 import com.longlong.bookmark.model.Diagram
 import com.longlong.bookmark.model.DiagramType
 import com.longlong.bookmark.service.DiagramService
 import java.awt.BorderLayout
 import java.awt.Dimension
+import java.awt.FlowLayout
 import javax.swing.*
 
 /**
@@ -21,64 +25,24 @@ object DiagramEditorProvider {
      * 打开导览图选择器
      */
     fun openDiagramSelector(project: Project) {
-        val diagramService = DiagramService.getInstance(project)
-        val diagrams = diagramService.getAllDiagrams()
-
-        if (diagrams.isEmpty()) {
-            // 创建默认导览图
-            diagramService.createDiagram("主流程", DiagramType.MAIN_FLOW)
-            openDiagramEditor(project, diagramService.getAllDiagrams().first())
-            return
-        }
-
-        if (diagrams.size == 1) {
-            openDiagramEditor(project, diagrams.first())
-            return
-        }
-
-        // 显示选择列表
-        val listModel = DefaultListModel<Diagram>()
-        diagrams.forEach { listModel.addElement(it) }
-
-        val list = JBList(listModel)
-        list.cellRenderer = object : DefaultListCellRenderer() {
-            override fun getListCellRendererComponent(
-                list: JList<*>?,
-                value: Any?,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ): java.awt.Component {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                val diagram = value as? Diagram
-                if (diagram != null) {
-                    text = "${diagram.name} (${diagram.type.displayName}) - ${diagram.nodes.size} 节点"
-                }
-                return this
-            }
-        }
-
-        val popup = JBPopupFactory.getInstance()
-            .createListPopupBuilder(list)
-            .setTitle("选择导览图")
-            .setItemChoosenCallback {
-                val selected = list.selectedValue
-                if (selected != null) {
-                    openDiagramEditor(project, selected)
-                }
-            }
-            .setAdText("双击打开导览图")
-            .createPopup()
-
-        popup.showCenteredInCurrentWindow(project)
+        val dialog = DiagramSelectorDialog(project)
+        dialog.show()
     }
 
     /**
-     * 打开导览图编辑器
+     * 打开导览图编辑器（对话框模式）
      */
     fun openDiagramEditor(project: Project, diagram: Diagram) {
         val dialog = DiagramEditorDialog(project, diagram)
         dialog.show()
+    }
+
+    /**
+     * 在编辑器Tab中打开导览图（支持分栏）
+     */
+    fun openDiagramInEditor(project: Project, diagram: Diagram) {
+        val virtualFile = LightVirtualFile("${diagram.id}.lldiagram", DiagramFileType, "")
+        FileEditorManager.getInstance(project).openFile(virtualFile, true)
     }
 
     /**
@@ -137,63 +101,149 @@ object DiagramEditorProvider {
 }
 
 /**
+ * 导览图选择对话框
+ */
+class DiagramSelectorDialog(private val project: Project) : DialogWrapper(project) {
+    
+    private val diagramService = DiagramService.getInstance(project)
+    private val listModel = DefaultListModel<Diagram>()
+    private val diagramList = JBList(listModel)
+
+    init {
+        title = Messages.diagrams
+        setSize(500, 400)
+        refreshList()
+        init()
+    }
+
+    private fun refreshList() {
+        listModel.clear()
+        diagramService.getAllDiagrams().forEach { listModel.addElement(it) }
+    }
+
+    override fun createCenterPanel(): JComponent {
+        val mainPanel = JPanel(BorderLayout(8, 8))
+        
+        diagramList.cellRenderer = object : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(list: JList<*>?, value: Any?, index: Int, 
+                isSelected: Boolean, cellHasFocus: Boolean): java.awt.Component {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+                (value as? Diagram)?.let {
+                    text = "📊 ${it.name} (${it.type.displayName}) - ${it.nodes.size} ${Messages.node}"
+                }
+                return this
+            }
+        }
+        
+        diagramList.addMouseListener(object : java.awt.event.MouseAdapter() {
+            override fun mouseClicked(e: java.awt.event.MouseEvent) {
+                if (e.clickCount == 2) {
+                    openSelectedDiagram()
+                }
+            }
+        })
+        
+        mainPanel.add(JScrollPane(diagramList), BorderLayout.CENTER)
+        
+        // 按钮面板
+        val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4))
+        
+        buttonPanel.add(JButton(Messages.newDiagram).apply {
+            addActionListener {
+                val dialog = CreateDiagramDialog(project)
+                if (dialog.showAndGet()) {
+                    diagramService.createDiagram(dialog.getDiagramName(), dialog.getDiagramType(), dialog.getDescription())
+                    refreshList()
+                }
+            }
+        })
+        
+        buttonPanel.add(JButton(Messages.openInWindow).apply {
+            addActionListener { openSelectedDiagram(false) }
+        })
+        
+        buttonPanel.add(JButton(Messages.openInEditor).apply {
+            addActionListener { openSelectedDiagram(true) }
+        })
+        
+        buttonPanel.add(JButton(Messages.delete).apply {
+            addActionListener {
+                diagramList.selectedValue?.let {
+                    if (JOptionPane.showConfirmDialog(mainPanel, 
+                        "${Messages.deleteDiagram}: ${it.name}?", Messages.delete, 
+                        JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                        diagramService.removeDiagram(it.id)
+                        refreshList()
+                    }
+                }
+            }
+        })
+        
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH)
+        
+        return mainPanel
+    }
+
+    private fun openSelectedDiagram(inEditor: Boolean = false) {
+        diagramList.selectedValue?.let {
+            close(OK_EXIT_CODE)
+            if (inEditor) {
+                DiagramEditorProvider.openDiagramInEditor(project, it)
+            } else {
+                DiagramEditorProvider.openDiagramEditor(project, it)
+            }
+        }
+    }
+
+    override fun createActions(): Array<Action> = arrayOf(cancelAction)
+}
+
+/**
  * 创建导览图对话框
  */
 class CreateDiagramDialog(project: Project) : DialogWrapper(project) {
 
     private val nameField = JTextField(20)
-    private val typeCombo = JComboBox(DiagramType.entries.toTypedArray())
+    private val typeCombo = JComboBox(DiagramType.values())
     private val descField = JTextField(30)
 
     init {
-        title = "创建新导览图"
+        title = Messages.newDiagram
+        typeCombo.renderer = object : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(list: JList<*>?, value: Any?, index: Int,
+                isSelected: Boolean, cellHasFocus: Boolean): java.awt.Component {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+                (value as? DiagramType)?.let { text = it.displayName }
+                return this
+            }
+        }
         init()
     }
 
     override fun createCenterPanel(): JComponent {
-        typeCombo.renderer = object : DefaultListCellRenderer() {
-            override fun getListCellRendererComponent(
-                list: JList<*>?,
-                value: Any?,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ): java.awt.Component {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                val type = value as? DiagramType
-                if (type != null) {
-                    text = type.displayName
-                }
-                return this
-            }
-        }
-
         val panel = JPanel()
         panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
 
-        val namePanel = JPanel(BorderLayout())
-        namePanel.add(JLabel("名称: "), BorderLayout.WEST)
-        namePanel.add(nameField, BorderLayout.CENTER)
-
-        val typePanel = JPanel(BorderLayout())
-        typePanel.add(JLabel("类型: "), BorderLayout.WEST)
-        typePanel.add(typeCombo, BorderLayout.CENTER)
-
-        val descPanel = JPanel(BorderLayout())
-        descPanel.add(JLabel("描述: "), BorderLayout.WEST)
-        descPanel.add(descField, BorderLayout.CENTER)
-
-        panel.add(namePanel)
+        panel.add(JPanel(BorderLayout()).apply {
+            add(JLabel("${Messages.name}: "), BorderLayout.WEST)
+            add(nameField, BorderLayout.CENTER)
+        })
         panel.add(Box.createVerticalStrut(10))
-        panel.add(typePanel)
+        panel.add(JPanel(BorderLayout()).apply {
+            add(JLabel("${Messages.type}: "), BorderLayout.WEST)
+            add(typeCombo, BorderLayout.CENTER)
+        })
         panel.add(Box.createVerticalStrut(10))
-        panel.add(descPanel)
+        panel.add(JPanel(BorderLayout()).apply {
+            add(JLabel("${Messages.comment}: "), BorderLayout.WEST)
+            add(descField, BorderLayout.CENTER)
+        })
 
         panel.preferredSize = Dimension(400, 120)
         return panel
     }
 
-    fun getDiagramName(): String = nameField.text.trim().ifEmpty { "新导览图" }
+    fun getDiagramName(): String = nameField.text.trim().ifEmpty { Messages.newDiagram }
     fun getDiagramType(): DiagramType = typeCombo.selectedItem as DiagramType
     fun getDescription(): String = descField.text.trim()
 }

@@ -8,6 +8,7 @@ import com.intellij.ui.*
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.model.Bookmark
 import com.longlong.bookmark.model.BookmarkColor
 import com.longlong.bookmark.model.BookmarkStatus
@@ -37,16 +38,22 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
     private val searchField = SearchTextField()
     private val tree: Tree
     private val treeModel: DefaultTreeModel
-    private val rootNode = DefaultMutableTreeNode("书签")
+    private val rootNode = DefaultMutableTreeNode("Bookmarks")
+    private lateinit var groupByLabel: JLabel
+    private lateinit var groupByCombo: JComboBox<GroupBy>
 
     // 折叠方式
     private var groupBy: GroupBy = GroupBy.FILE
 
-    enum class GroupBy(val displayName: String) {
-        FILE("按文件"),
-        COLOR("按颜色"),
-        TAG("按标签"),
-        STATUS("按状态")
+    enum class GroupBy {
+        FILE, COLOR, TAG, STATUS;
+        
+        fun getDisplayName(): String = when (this) {
+            FILE -> if (Messages.isEnglish()) "By File" else "按文件"
+            COLOR -> if (Messages.isEnglish()) "By Color" else "按颜色"
+            TAG -> if (Messages.isEnglish()) "By Tag" else "按标签"
+            STATUS -> if (Messages.isEnglish()) "By Status" else "按状态"
+        }
     }
 
     init {
@@ -96,13 +103,13 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         // 折叠方式选择
         val groupByPanel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0))
         groupByPanel.border = JBUI.Borders.empty(0, 4, 4, 4)
-        val groupByCombo = JComboBox(GroupBy.entries.toTypedArray())
+        groupByCombo = JComboBox(GroupBy.values())
         groupByCombo.renderer = object : DefaultListCellRenderer() {
             override fun getListCellRendererComponent(
                 list: JList<*>?, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean
             ): Component {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                text = (value as? GroupBy)?.displayName ?: ""
+                text = (value as? GroupBy)?.getDisplayName() ?: ""
                 return this
             }
         }
@@ -110,7 +117,8 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
             groupBy = groupByCombo.selectedItem as GroupBy
             refreshTree()
         }
-        groupByPanel.add(JLabel("分组:"))
+        groupByLabel = JLabel(if (Messages.isEnglish()) "Group:" else "分组:")
+        groupByPanel.add(groupByLabel)
         groupByPanel.add(groupByCombo)
 
         topPanel.add(searchPanel, BorderLayout.NORTH)
@@ -138,11 +146,19 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
         // 初始化树
         refreshTree()
+        updateUITexts()
+    }
+
+    private fun updateUITexts() {
+        searchField.textEditor.emptyText.text = Messages.searchPlaceholder
+        groupByLabel.text = if (Messages.isEnglish()) "Group:" else "分组:"
+        groupByCombo.repaint()
+        refreshTree()
     }
 
     private fun createToolbar(): ActionToolbar {
         val actionGroup = DefaultActionGroup().apply {
-            add(object : AnAction("添加书签", "在编辑器中添加书签", AllIcons.General.Add) {
+            add(object : AnAction(Messages.addBookmark, Messages.addBookmark, AllIcons.General.Add) {
                 override fun actionPerformed(e: AnActionEvent) {
                     val actionEvent = AnActionEvent.createFromDataContext(
                         ActionPlaces.TOOLWINDOW_CONTENT,
@@ -156,34 +172,61 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
                     )
                     ActionManager.getInstance().getAction("LongLongBookmark.AddBookmark")?.actionPerformed(actionEvent)
                 }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.addBookmark
+                }
             })
 
-            add(object : AnAction("刷新", "刷新书签列表", AllIcons.Actions.Refresh) {
+            add(object : AnAction(Messages.refresh, Messages.refresh, AllIcons.Actions.Refresh) {
                 override fun actionPerformed(e: AnActionEvent) {
                     bookmarkService.refreshBookmarks()
                     refreshTree()
                 }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.refresh
+                }
             })
 
             addSeparator()
 
-            add(object : AnAction("导出", "导出书签", AllIcons.ToolbarDecorator.Export) {
+            add(object : AnAction(Messages.export, Messages.export, AllIcons.ToolbarDecorator.Export) {
                 override fun actionPerformed(e: AnActionEvent) {
                     ExportDialog(project).show()
                 }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.export
+                }
             })
 
-            add(object : AnAction("导入", "导入书签", AllIcons.ToolbarDecorator.Import) {
+            add(object : AnAction(Messages.import, Messages.import, AllIcons.ToolbarDecorator.Import) {
                 override fun actionPerformed(e: AnActionEvent) {
                     ImportDialog(project).show()
+                }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.import
                 }
             })
 
             addSeparator()
 
-            add(object : AnAction("导览图", "打开导览图", AllIcons.FileTypes.Diagram) {
+            add(object : AnAction(Messages.diagram, Messages.openDiagram, AllIcons.FileTypes.Diagram) {
                 override fun actionPerformed(e: AnActionEvent) {
                     DiagramEditorProvider.openDiagramSelector(project)
+                }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.diagram
+                }
+            })
+
+            addSeparator()
+
+            add(object : AnAction(Messages.switchLanguage, "切换语言", AllIcons.Actions.ChangeView) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    Messages.toggleLanguage()
+                    updateUITexts()
+                }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.switchLanguage
                 }
             })
         }
@@ -232,7 +275,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
     }
 
     private fun groupByColor(bookmarks: List<Bookmark>) {
-        BookmarkColor.entries.forEach { color ->
+        BookmarkColor.values().forEach { color ->
             val colorBookmarks = bookmarks.filter { it.color == color }
             if (colorBookmarks.isNotEmpty()) {
                 val colorNode = DefaultMutableTreeNode(GroupNode(color.displayName, color.name))
@@ -267,7 +310,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
     }
 
     private fun groupByStatus(bookmarks: List<Bookmark>) {
-        BookmarkStatus.entries.forEach { status ->
+        BookmarkStatus.values().forEach { status ->
             val statusBookmarks = bookmarks.filter { it.status == status }
             if (statusBookmarks.isNotEmpty()) {
                 val statusName = when (status) {
@@ -324,7 +367,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
         // 颜色子菜单
         val colorMenu = JMenu("修改颜色")
-        BookmarkColor.entries.forEach { color ->
+        BookmarkColor.values().forEach { color ->
             colorMenu.add(JMenuItem(color.displayName).apply {
                 addActionListener {
                     bookmark.color = color

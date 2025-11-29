@@ -3,6 +3,7 @@ package com.longlong.bookmark.action
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.ui.dialog.ImportDialog
 
 /**
@@ -17,5 +18,6 @@ class ImportAction : AnAction(), DumbAware {
 
     override fun update(e: AnActionEvent) {
         e.presentation.isEnabledAndVisible = e.project != null
+        e.presentation.text = Messages.import
     }
 }

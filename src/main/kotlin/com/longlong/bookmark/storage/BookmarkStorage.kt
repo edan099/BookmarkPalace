@@ -181,7 +181,6 @@ class DiagramStorageItem {
     var name: String = ""
     var description: String = ""
     var type: String = "CUSTOM_FLOW"
-    var layout: String = "TREE"
     var createdAt: Long = 0
     var updatedAt: Long = 0
 
@@ -197,7 +196,6 @@ class DiagramStorageItem {
             name = name,
             description = description,
             type = try { DiagramType.valueOf(type) } catch (e: Exception) { DiagramType.CUSTOM_FLOW },
-            layout = try { DiagramLayout.valueOf(layout) } catch (e: Exception) { DiagramLayout.TREE },
             nodes = nodes.map { it.toNode() }.toMutableList(),
             connections = connections.map { it.toConnection() }.toMutableList(),
             createdAt = createdAt,
@@ -212,7 +210,6 @@ class DiagramStorageItem {
                 name = diagram.name
                 description = diagram.description
                 type = diagram.type.name
-                layout = diagram.layout.name
                 nodes = diagram.nodes.map { DiagramNodeStorageItem.fromNode(it) }.toMutableList()
                 connections = diagram.connections.map { DiagramConnectionStorageItem.fromConnection(it) }.toMutableList()
                 createdAt = diagram.createdAt
@@ -231,47 +228,33 @@ class DiagramNodeStorageItem {
     var bookmarkId: String? = null
     var label: String = ""
     var description: String = ""
-    var nodeType: String = "NORMAL"
+    var shape: String = "RECTANGLE"
     var x: Double = 0.0
     var y: Double = 0.0
-    var width: Double = 150.0
-    var height: Double = 60.0
-    var color: String? = null
-    var showCode: Boolean = false
-    var collapsed: Boolean = true
+    var width: Double = 120.0
+    var height: Double = 50.0
+    var color: String = "#4A90D9"
+    var textColor: String = "#FFFFFF"
+    var borderColor: String = "#333333"
+    var fontSize: Int = 12
+    var borderWidth: Float = 1.5f
 
     fun toNode(): DiagramNode {
         return DiagramNode(
-            id = id,
-            bookmarkId = bookmarkId,
-            label = label,
-            description = description,
-            nodeType = try { NodeType.valueOf(nodeType) } catch (e: Exception) { NodeType.NORMAL },
-            x = x,
-            y = y,
-            width = width,
-            height = height,
-            color = color,
-            showCode = showCode,
-            collapsed = collapsed
+            id = id, bookmarkId = bookmarkId, label = label, description = description,
+            shape = try { NodeShape.valueOf(shape) } catch (e: Exception) { NodeShape.RECTANGLE },
+            x = x, y = y, width = width, height = height, color = color,
+            textColor = textColor, borderColor = borderColor, fontSize = fontSize, borderWidth = borderWidth
         )
     }
 
     companion object {
         fun fromNode(node: DiagramNode): DiagramNodeStorageItem {
             return DiagramNodeStorageItem().apply {
-                id = node.id
-                bookmarkId = node.bookmarkId
-                label = node.label
-                description = node.description
-                nodeType = node.nodeType.name
-                x = node.x
-                y = node.y
-                width = node.width
-                height = node.height
-                color = node.color
-                showCode = node.showCode
-                collapsed = node.collapsed
+                id = node.id; bookmarkId = node.bookmarkId; label = node.label; description = node.description
+                shape = node.shape.name; x = node.x; y = node.y; width = node.width; height = node.height
+                color = node.color; textColor = node.textColor; borderColor = node.borderColor
+                fontSize = node.fontSize; borderWidth = node.borderWidth
             }
         }
     }
@@ -285,27 +268,27 @@ class DiagramConnectionStorageItem {
     var id: String = ""
     var sourceNodeId: String = ""
     var targetNodeId: String = ""
-    var connectionType: String = "NORMAL"
+    var connectionType: String = "ARROW"
     var label: String = ""
+    var lineColor: String = "#666666"
+    var lineWidth: Float = 2f
+    var fontSize: Int = 11
+    var curveOffset: Double = 0.0
 
     fun toConnection(): DiagramConnection {
         return DiagramConnection(
-            id = id,
-            sourceNodeId = sourceNodeId,
-            targetNodeId = targetNodeId,
-            connectionType = try { ConnectionType.valueOf(connectionType) } catch (e: Exception) { ConnectionType.NORMAL },
-            label = label
+            id = id, sourceNodeId = sourceNodeId, targetNodeId = targetNodeId,
+            connectionType = try { ConnectionType.valueOf(connectionType) } catch (e: Exception) { ConnectionType.ARROW },
+            label = label, lineColor = lineColor, lineWidth = lineWidth, fontSize = fontSize, curveOffset = curveOffset
         )
     }
 
     companion object {
         fun fromConnection(conn: DiagramConnection): DiagramConnectionStorageItem {
             return DiagramConnectionStorageItem().apply {
-                id = conn.id
-                sourceNodeId = conn.sourceNodeId
-                targetNodeId = conn.targetNodeId
-                connectionType = conn.connectionType.name
-                label = conn.label
+                id = conn.id; sourceNodeId = conn.sourceNodeId; targetNodeId = conn.targetNodeId
+                connectionType = conn.connectionType.name; label = conn.label
+                lineColor = conn.lineColor; lineWidth = conn.lineWidth; fontSize = conn.fontSize; curveOffset = conn.curveOffset
             }
         }
     }

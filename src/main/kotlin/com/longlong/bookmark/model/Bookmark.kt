@@ -27,7 +27,7 @@ enum class BookmarkColor(val displayName: String, val hexColor: String) {
 
     companion object {
         fun fromName(name: String): BookmarkColor {
-            return entries.find { it.name.equals(name, ignoreCase = true) } ?: BLUE
+            return values().find { it.name.equals(name, ignoreCase = true) } ?: BLUE
         }
     }
 }

@@ -26,7 +26,7 @@ class AddBookmarkDialog(
 ) : DialogWrapper(project) {
 
     private val aliasField = JBTextField()
-    private val colorCombo = ComboBox(BookmarkColor.entries.toTypedArray())
+    private val colorCombo = ComboBox(BookmarkColor.values())
     private val tagField = JBTextField()
     private val commentArea = JBTextArea(3, 40)
     private val codePreview = JBTextArea(5, 40)

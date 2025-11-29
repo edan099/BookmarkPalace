@@ -24,15 +24,6 @@ dependencies {
     }
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
-kotlin {
-    jvmToolchain(17)
-}
-
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
@@ -42,14 +33,16 @@ intellijPlatform {
     }
     
     buildSearchableOptions = false
+    instrumentCode = false
 }
 
 tasks {
-    compileKotlin {
-        kotlinOptions.jvmTarget = "17"
+    withType<JavaCompile> {
+        sourceCompatibility = "17"
+        targetCompatibility = "17"
     }
-
-    compileTestKotlin {
+    
+    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
     }
 }
