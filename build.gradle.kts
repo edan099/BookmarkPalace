@@ -46,6 +46,11 @@ intellijPlatform {
     
     buildSearchableOptions = false
     instrumentCode = false
+    
+    // 发布配置
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
 }
 
 tasks {
