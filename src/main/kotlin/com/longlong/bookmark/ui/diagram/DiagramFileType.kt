@@ -9,7 +9,7 @@ import javax.swing.Icon
  */
 object DiagramFileType : FileType {
     override fun getName(): String = "LongLong Diagram"
-    override fun getDescription(): String = "LongLong Bookmark Diagram File"
+    override fun getDescription(): String = "BookmarkPalace Diagram File"
     override fun getDefaultExtension(): String = "lldiagram"
     override fun getIcon(): Icon? = null
     override fun isBinary(): Boolean = false

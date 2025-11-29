@@ -1,11 +1,14 @@
 <idea-plugin>
     <id>com.longlong.bookmark</id>
-    <name>龙龙书签 · LongLong Bookmark</name>
+    <name>BookmarkPalace · 书签宫殿</name>
+    
+    <!-- 资源包，用于国际化 -->
+    <resource-bundle>messages.LongLongBookmarkBundle</resource-bundle>
     <version>1.0.0</version>
-    <vendor email="support@longlong.dev" url="https://github.com/longlong-bookmark">LongLong Dev</vendor>
+    <vendor email="support@bookmarkpalace.dev" url="https://github.com/bookmark-palace">BookmarkPalace</vendor>
 
     <description><![CDATA[
-    <h2>🐉 龙龙书签 · LongLong Bookmark</h2>
+    <h2>🏰 BookmarkPalace · 书签宫殿</h2>
     <p>JetBrains 增强代码书签系统 - 让代码导航更高效！</p>
 
     <h3>核心功能：</h3>
@@ -64,11 +67,13 @@
 
         <!-- 工具窗口 -->
         <toolWindow
-                id="龙龙书签"
+                id="BookmarkPalace"
                 anchor="left"
                 secondary="true"
-                icon="/icons/bookmark_tool.svg"
-                factoryClass="com.longlong.bookmark.ui.BookmarkToolWindowFactory"/>
+                icon="/icons/logo.svg"
+                factoryClass="com.longlong.bookmark.ui.BookmarkToolWindowFactory"
+                bundle="messages.LongLongBookmarkBundle"
+                key="tool.window.name"/>
 
         <!-- Gutter Icon 提供者 -->
         <codeInsight.lineMarkerProvider
@@ -85,91 +90,121 @@
 
         <!-- 通知组 -->
         <notificationGroup
-                id="LongLong Bookmark"
+                id="BookmarkPalace"
                 displayType="BALLOON"/>
         
         <!-- 导览图文件编辑器 -->
         <fileEditorProvider
                 implementation="com.longlong.bookmark.ui.diagram.DiagramFileEditorProvider"/>
         
-        <!-- 导览图文件类型 -->
+        <!-- 导览图文件类型（编辑模式） -->
         <fileType
-                name="LongLong Diagram"
+                name="BookmarkPalace Diagram"
                 implementationClass="com.longlong.bookmark.ui.diagram.DiagramFileType"
                 extensions="lldiagram"/>
+        
+        <!-- 导览图文件类型（查看模式） -->
+        <fileType
+                name="BookmarkPalace Diagram View"
+                implementationClass="com.longlong.bookmark.ui.diagram.DiagramViewFileType"
+                extensions="lldiagramview"/>
+        
+        <!-- 导览图编辑器设置（应用级） -->
+        <applicationService
+                serviceImplementation="com.longlong.bookmark.settings.DiagramEditorSettings"/>
+        
+        <!-- 导览图标签页标题提供者 -->
+        <editorTabTitleProvider
+                implementation="com.longlong.bookmark.ui.diagram.DiagramTabTitleProvider"/>
+        
+        <!-- Alt+Enter 意图动作：添加书签 -->
+        <intentionAction>
+            <className>com.longlong.bookmark.action.AddBookmarkIntention</className>
+            <category>BookmarkPalace</category>
+        </intentionAction>
     </extensions>
 
     <actions>
         <!-- 主菜单组 -->
-        <group id="LongLongBookmark.MainMenu"
-               text="龙龙书签"
-               description="LongLong Bookmark Actions"
+        <group id="BookmarkPalace.MainMenu"
                popup="true">
+            <override-text bundle="messages.LongLongBookmarkBundle" key="menu.name"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </group>
 
         <!-- 添加书签 -->
-        <action id="LongLongBookmark.AddBookmark"
+        <action id="BookmarkPalace.AddBookmark"
                 class="com.longlong.bookmark.action.AddBookmarkAction"
-                text="添加书签"
-                description="在当前位置添加书签"
                 icon="/icons/add_bookmark.svg">
-            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="first"/>
+            <override-text bundle="messages.LongLongBookmarkBundle" key="action.add.bookmark"/>
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="first"/>
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift B"/>
         </action>
 
         <!-- 快速添加书签（无对话框） -->
-        <action id="LongLongBookmark.QuickAddBookmark"
+        <action id="BookmarkPalace.QuickAddBookmark"
                 class="com.longlong.bookmark.action.QuickAddBookmarkAction"
-                text="快速添加书签"
-                description="快速添加书签（无对话框）"
                 icon="/icons/quick_add.svg">
-            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
-                          relative-to-action="LongLongBookmark.AddBookmark"/>
+            <override-text bundle="messages.LongLongBookmarkBundle" key="action.quick.add"/>
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.AddBookmark"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt B"/>
-            <keyboard-shortcut keymap="$default" first-keystroke="alt ENTER"/>
         </action>
 
         <!-- 显示书签列表 -->
-        <action id="LongLongBookmark.ShowBookmarks"
+        <action id="BookmarkPalace.ShowBookmarks"
                 class="com.longlong.bookmark.action.ShowBookmarksAction"
-                text="显示书签列表"
-                description="打开书签工具窗口"
                 icon="/icons/bookmark_list.svg">
-            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
-                          relative-to-action="LongLongBookmark.QuickAddBookmark"/>
+            <override-text bundle="messages.LongLongBookmarkBundle" key="action.show.bookmarks"/>
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.QuickAddBookmark"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift M"/>
         </action>
 
         <!-- 打开导览图 -->
-        <action id="LongLongBookmark.OpenDiagram"
+        <action id="BookmarkPalace.OpenDiagram"
                 class="com.longlong.bookmark.action.OpenDiagramAction"
-                text="打开导览图"
-                description="打开书签导览图"
                 icon="/icons/diagram.svg">
-            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
-                          relative-to-action="LongLongBookmark.ShowBookmarks"/>
+            <override-text bundle="messages.LongLongBookmarkBundle" key="action.open.diagram"/>
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.ShowBookmarks"/>
         </action>
 
         <!-- 导出 -->
-        <action id="LongLongBookmark.Export"
+        <action id="BookmarkPalace.Export"
                 class="com.longlong.bookmark.action.ExportAction"
-                text="导出书签"
-                description="导出书签数据"
                 icon="/icons/export.svg">
-            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
-                          relative-to-action="LongLongBookmark.OpenDiagram"/>
+            <override-text bundle="messages.LongLongBookmarkBundle" key="action.export"/>
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.OpenDiagram"/>
         </action>
 
         <!-- 导入 -->
-        <action id="LongLongBookmark.Import"
+        <action id="BookmarkPalace.Import"
                 class="com.longlong.bookmark.action.ImportAction"
-                text="导入书签"
-                description="导入书签数据"
                 icon="/icons/import.svg">
-            <add-to-group group-id="LongLongBookmark.MainMenu" anchor="after"
-                          relative-to-action="LongLongBookmark.Export"/>
+            <override-text bundle="messages.LongLongBookmarkBundle" key="action.import"/>
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.Export"/>
+        </action>
+
+        <!-- 切换导览图编辑器 -->
+        <action id="BookmarkPalace.ToggleDiagramEditor"
+                class="com.longlong.bookmark.action.ToggleDiagramEditorAction"
+                text="切换导览图编辑器"
+                description="在原生 Swing 和 Draw.io jCEF 编辑器之间切换">
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.Import"/>
+        </action>
+
+        <!-- 诊断导览图编辑器 -->
+        <action id="BookmarkPalace.DiagnoseDiagramEditor"
+                class="com.longlong.bookmark.action.DiagnoseDiagramEditorAction"
+                text="诊断导览图编辑器"
+                description="检查 Draw.io 编辑器配置和 jCEF 支持状态">
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.ToggleDiagramEditor"/>
         </action>
     </actions>
 

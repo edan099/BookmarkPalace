@@ -31,17 +31,21 @@ object DiagramEditorProvider {
 
     /**
      * 打开导览图编辑器（对话框模式）
+     * 使用 Draw.io 编辑器
      */
     fun openDiagramEditor(project: Project, diagram: Diagram) {
-        val dialog = DiagramEditorDialog(project, diagram)
+        val dialog = DrawioDialog(project, diagram)
         dialog.show()
     }
 
     /**
      * 在编辑器Tab中打开导览图（支持分栏）
+     * @param viewOnly 是否为只读查看模式
      */
-    fun openDiagramInEditor(project: Project, diagram: Diagram) {
-        val virtualFile = LightVirtualFile("${diagram.id}.lldiagram", DiagramFileType, "")
+    fun openDiagramInEditor(project: Project, diagram: Diagram, viewOnly: Boolean = false) {
+        // 使用不同的扩展名区分编辑模式和查看模式
+        val ext = if (viewOnly) "lldiagramview" else "lldiagram"
+        val virtualFile = LightVirtualFile("${diagram.id}.$ext", DiagramFileType, "")
         FileEditorManager.getInstance(project).openFile(virtualFile, true)
     }
 
@@ -129,7 +133,7 @@ class DiagramSelectorDialog(private val project: Project) : DialogWrapper(projec
                 isSelected: Boolean, cellHasFocus: Boolean): java.awt.Component {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
                 (value as? Diagram)?.let {
-                    text = "📊 ${it.name} (${it.type.displayName}) - ${it.nodes.size} ${Messages.node}"
+                    text = "📊 ${it.name}"
                 }
                 return this
             }
@@ -138,17 +142,20 @@ class DiagramSelectorDialog(private val project: Project) : DialogWrapper(projec
         diagramList.addMouseListener(object : java.awt.event.MouseAdapter() {
             override fun mouseClicked(e: java.awt.event.MouseEvent) {
                 if (e.clickCount == 2) {
-                    openSelectedDiagram()
+                    openSelectedDiagram(inEditor = true, viewOnly = false)  // 双击默认在编辑器中打开（编辑模式）
                 }
             }
         })
         
         mainPanel.add(JScrollPane(diagramList), BorderLayout.CENTER)
         
-        // 按钮面板
-        val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4))
+        // 按钮面板 - 第一行：创建和打开操作
+        val buttonPanel = JPanel()
+        buttonPanel.layout = BoxLayout(buttonPanel, BoxLayout.Y_AXIS)
         
-        buttonPanel.add(JButton(Messages.newDiagram).apply {
+        val row1 = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4))
+        
+        row1.add(JButton(Messages.newDiagram).apply {
             addActionListener {
                 val dialog = CreateDiagramDialog(project)
                 if (dialog.showAndGet()) {
@@ -158,15 +165,45 @@ class DiagramSelectorDialog(private val project: Project) : DialogWrapper(projec
             }
         })
         
-        buttonPanel.add(JButton(Messages.openInWindow).apply {
-            addActionListener { openSelectedDiagram(false) }
+        row1.add(JButton(Messages.openInEditor).apply {
+            toolTipText = "在编辑器中打开（支持分栏，可边看图边看代码）"
+            addActionListener { openSelectedDiagram(inEditor = true, viewOnly = false) }
         })
         
-        buttonPanel.add(JButton(Messages.openInEditor).apply {
-            addActionListener { openSelectedDiagram(true) }
+        row1.add(JButton(Messages.viewOnly).apply {
+            toolTipText = "仅查看模式（不可编辑，点击节点跳转代码）"
+            addActionListener { openSelectedDiagram(inEditor = true, viewOnly = true) }
         })
         
-        buttonPanel.add(JButton(Messages.delete).apply {
+        row1.add(JButton(Messages.openInWindow).apply {
+            toolTipText = "在弹窗中打开编辑"
+            addActionListener { openSelectedDiagram(inEditor = false, viewOnly = false) }
+        })
+        
+        buttonPanel.add(row1)
+        
+        // 第二行：编辑操作
+        val row2 = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4))
+        
+        row2.add(JButton(Messages.edit).apply {
+            toolTipText = "重命名选中的导览图"
+            addActionListener {
+                diagramList.selectedValue?.let { diagram ->
+                    val newName = JOptionPane.showInputDialog(
+                        mainPanel,
+                        Messages.renameDiagram,
+                        diagram.name
+                    )
+                    if (!newName.isNullOrBlank() && newName != diagram.name) {
+                        diagram.name = newName
+                        diagramService.updateDiagram(diagram)
+                        refreshList()
+                    }
+                }
+            }
+        })
+        
+        row2.add(JButton(Messages.delete).apply {
             addActionListener {
                 diagramList.selectedValue?.let {
                     if (JOptionPane.showConfirmDialog(mainPanel, 
@@ -179,16 +216,18 @@ class DiagramSelectorDialog(private val project: Project) : DialogWrapper(projec
             }
         })
         
+        buttonPanel.add(row2)
+        
         mainPanel.add(buttonPanel, BorderLayout.SOUTH)
         
         return mainPanel
     }
 
-    private fun openSelectedDiagram(inEditor: Boolean = false) {
+    private fun openSelectedDiagram(inEditor: Boolean = false, viewOnly: Boolean = false) {
         diagramList.selectedValue?.let {
             close(OK_EXIT_CODE)
             if (inEditor) {
-                DiagramEditorProvider.openDiagramInEditor(project, it)
+                DiagramEditorProvider.openDiagramInEditor(project, it, viewOnly)
             } else {
                 DiagramEditorProvider.openDiagramEditor(project, it)
             }

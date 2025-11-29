@@ -52,9 +52,11 @@ class DiagramService(private val project: Project) {
     fun createDiagram(
         name: String,
         type: DiagramType = DiagramType.CUSTOM_FLOW,
-        description: String = ""
+        description: String = "",
+        id: String? = null  // 可选指定 ID，用于编辑器关联
     ): Diagram {
         val diagram = Diagram(
+            id = id ?: java.util.UUID.randomUUID().toString(),
             name = name,
             type = type,
             description = description
@@ -220,6 +222,15 @@ class DiagramService(private val project: Project) {
      */
     fun removeChangeListener(listener: DiagramChangeListener) {
         listeners.remove(listener)
+    }
+
+    /**
+     * 从存储重新加载导览图（用于导入后刷新）
+     */
+    fun reloadFromStorage() {
+        loadFromStorage()
+        // 通知所有导览图已更新
+        diagrams.forEach { notifyDiagramUpdated(it) }
     }
 
     // === 私有方法 ===

@@ -364,6 +364,14 @@ class BookmarkService(private val project: Project) {
         listeners.remove(listener)
     }
 
+    /**
+     * 从存储重新加载书签（用于导入后刷新）
+     */
+    fun reloadFromStorage() {
+        loadFromStorage()
+        notifyBookmarksRefreshed()
+    }
+
     // === 私有方法 ===
 
     private fun loadFromStorage() {

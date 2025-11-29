@@ -19,6 +19,7 @@ dependencies {
     
     intellijPlatform {
         intellijIdeaCommunity("2023.2")
+        bundledPlugin("com.intellij.platform.images") // 用于 jCEF 支持
         instrumentationTools()
         pluginVerifier()
     }

@@ -14,7 +14,7 @@ class ShowBookmarksAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
-        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("龙龙书签")
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("BookmarkPalace")
         toolWindow?.show()
     }
 

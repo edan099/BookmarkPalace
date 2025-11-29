@@ -2,6 +2,7 @@ package com.longlong.bookmark.ui
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.*
+import com.longlong.bookmark.icons.BookmarkPalaceIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.*
@@ -39,8 +40,8 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
     private val tree: Tree
     private val treeModel: DefaultTreeModel
     private val rootNode = DefaultMutableTreeNode("Bookmarks")
-    private lateinit var groupByLabel: JLabel
-    private lateinit var groupByCombo: JComboBox<GroupBy>
+    private val groupByLabel = JLabel()
+    private val groupByCombo = JComboBox(GroupBy.values())
 
     // 折叠方式
     private var groupBy: GroupBy = GroupBy.FILE
@@ -103,7 +104,6 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         // 折叠方式选择
         val groupByPanel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0))
         groupByPanel.border = JBUI.Borders.empty(0, 4, 4, 4)
-        groupByCombo = JComboBox(GroupBy.values())
         groupByCombo.renderer = object : DefaultListCellRenderer() {
             override fun getListCellRendererComponent(
                 list: JList<*>?, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean
@@ -117,7 +117,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
             groupBy = groupByCombo.selectedItem as GroupBy
             refreshTree()
         }
-        groupByLabel = JLabel(if (Messages.isEnglish()) "Group:" else "分组:")
+        groupByLabel.text = if (Messages.isEnglish()) "Group:" else "分组:"
         groupByPanel.add(groupByLabel)
         groupByPanel.add(groupByCombo)
 
@@ -158,26 +158,16 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
     private fun createToolbar(): ActionToolbar {
         val actionGroup = DefaultActionGroup().apply {
-            add(object : AnAction(Messages.addBookmark, Messages.addBookmark, AllIcons.General.Add) {
+            add(object : AnAction(Messages.help, Messages.helpTip, AllIcons.Actions.Help) {
                 override fun actionPerformed(e: AnActionEvent) {
-                    val actionEvent = AnActionEvent.createFromDataContext(
-                        ActionPlaces.TOOLWINDOW_CONTENT,
-                        null,
-                        DataContext { dataId ->
-                            when (dataId) {
-                                CommonDataKeys.PROJECT.name -> project
-                                else -> null
-                            }
-                        }
-                    )
-                    ActionManager.getInstance().getAction("LongLongBookmark.AddBookmark")?.actionPerformed(actionEvent)
+                    showHelpDialog()
                 }
                 override fun update(e: AnActionEvent) {
-                    e.presentation.text = Messages.addBookmark
+                    e.presentation.text = Messages.help
                 }
             })
 
-            add(object : AnAction(Messages.refresh, Messages.refresh, AllIcons.Actions.Refresh) {
+            add(object : AnAction(Messages.refresh, Messages.refresh, BookmarkPalaceIcons.Refresh) {
                 override fun actionPerformed(e: AnActionEvent) {
                     bookmarkService.refreshBookmarks()
                     refreshTree()
@@ -189,7 +179,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
             addSeparator()
 
-            add(object : AnAction(Messages.export, Messages.export, AllIcons.ToolbarDecorator.Export) {
+            add(object : AnAction(Messages.export, Messages.export, BookmarkPalaceIcons.Export) {
                 override fun actionPerformed(e: AnActionEvent) {
                     ExportDialog(project).show()
                 }
@@ -198,7 +188,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
                 }
             })
 
-            add(object : AnAction(Messages.import, Messages.import, AllIcons.ToolbarDecorator.Import) {
+            add(object : AnAction(Messages.import, Messages.import, BookmarkPalaceIcons.Import) {
                 override fun actionPerformed(e: AnActionEvent) {
                     ImportDialog(project).show()
                 }
@@ -209,7 +199,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
             addSeparator()
 
-            add(object : AnAction(Messages.diagram, Messages.openDiagram, AllIcons.FileTypes.Diagram) {
+            add(object : AnAction(Messages.diagram, Messages.openDiagram, BookmarkPalaceIcons.Diagram) {
                 override fun actionPerformed(e: AnActionEvent) {
                     DiagramEditorProvider.openDiagramSelector(project)
                 }
@@ -220,7 +210,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
             addSeparator()
 
-            add(object : AnAction(Messages.switchLanguage, "切换语言", AllIcons.Actions.ChangeView) {
+            add(object : AnAction(Messages.switchLanguage, "切换语言", BookmarkPalaceIcons.Language) {
                 override fun actionPerformed(e: AnActionEvent) {
                     Messages.toggleLanguage()
                     updateUITexts()
@@ -235,7 +225,9 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
             ActionPlaces.TOOLWINDOW_CONTENT,
             actionGroup,
             true
-        )
+        ).apply {
+            targetComponent = this@BookmarkToolWindowPanel
+        }
     }
 
     private fun refreshTree() {
@@ -301,7 +293,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         // 未标记的书签
         val untaggedBookmarks = bookmarks.filter { it.tags.isEmpty() }
         if (untaggedBookmarks.isNotEmpty()) {
-            val untaggedNode = DefaultMutableTreeNode(GroupNode("未标记", "untagged"))
+            val untaggedNode = DefaultMutableTreeNode(GroupNode(if (Messages.isEnglish()) "Untagged" else "未标记", "untagged"))
             untaggedBookmarks.forEach { bookmark ->
                 untaggedNode.add(DefaultMutableTreeNode(bookmark))
             }
@@ -350,13 +342,13 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
         val popup = JPopupMenu()
 
-        popup.add(JMenuItem("跳转").apply {
+        popup.add(JMenuItem(Messages.jumpTo).apply {
             addActionListener { bookmarkService.navigateToBookmark(bookmark) }
         })
 
         popup.addSeparator()
 
-        popup.add(JMenuItem("编辑").apply {
+        popup.add(JMenuItem(Messages.edit).apply {
             addActionListener {
                 val dialog = EditBookmarkDialog(project, bookmark)
                 if (dialog.showAndGet()) {
@@ -366,7 +358,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         })
 
         // 颜色子菜单
-        val colorMenu = JMenu("修改颜色")
+        val colorMenu = JMenu(if (Messages.isEnglish()) "Change Color" else "修改颜色")
         BookmarkColor.values().forEach { color ->
             colorMenu.add(JMenuItem(color.displayName).apply {
                 addActionListener {
@@ -379,7 +371,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
         popup.addSeparator()
 
-        popup.add(JMenuItem("添加到导览图").apply {
+        popup.add(JMenuItem(if (Messages.isEnglish()) "Add to Diagram" else "添加到导览图").apply {
             addActionListener {
                 DiagramEditorProvider.addBookmarkToDiagram(project, bookmark)
             }
@@ -387,13 +379,120 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
         popup.addSeparator()
 
-        popup.add(JMenuItem("删除").apply {
+        popup.add(JMenuItem(Messages.delete).apply {
             addActionListener {
                 bookmarkService.removeBookmark(bookmark.id)
             }
         })
 
         popup.show(tree, e.x, e.y)
+    }
+
+    /**
+     * 显示使用说明对话框
+     */
+    private fun showHelpDialog() {
+        val helpContent = if (Messages.isEnglish()) {
+            """
+            <html>
+            <body style="font-family: sans-serif; padding: 10px; width: 450px;">
+            <h2>🏰 BookmarkPalace User Guide</h2>
+            
+            <h3>📌 Add Bookmark</h3>
+            <ul>
+                <li><b>Shortcut:</b> <code>Ctrl+Shift+B</code> - Add bookmark with dialog</li>
+                <li><b>Quick Add:</b> <code>Ctrl+Alt+B</code> - Quick add without dialog</li>
+                <li><b>Right-click</b> on code → "Add Bookmark"</li>
+            </ul>
+            
+            <h3>🔍 Navigate</h3>
+            <ul>
+                <li><b>Double-click</b> bookmark in list to jump to code</li>
+                <li>Use <b>search box</b> to filter bookmarks</li>
+                <li>Use <b>Group</b> dropdown to organize by file/color/tag/status</li>
+            </ul>
+            
+            <h3>🗺️ Diagram</h3>
+            <ul>
+                <li>Click <b>Diagram</b> button to open diagram manager</li>
+                <li><b>Edit Mode:</b> Double-click bookmark in sidebar to add to canvas</li>
+                <li><b>View Mode:</b> Click node link to jump to code</li>
+                <li><b>Split View:</b> Right-click tab → "Split Right" for side-by-side view</li>
+            </ul>
+            
+            <h3>📤 Import/Export</h3>
+            <ul>
+                <li>Supports <b>JSON</b>, <b>Markdown</b>, <b>Mermaid</b> formats</li>
+                <li>Share bookmarks with team members</li>
+            </ul>
+            
+            <h3>💡 Tips</h3>
+            <ul>
+                <li>Bookmarks auto-track code position changes</li>
+                <li>Use <b>colors</b> and <b>tags</b> to categorize bookmarks</li>
+                <li>Right-click bookmark for more options</li>
+            </ul>
+            </body>
+            </html>
+            """.trimIndent()
+        } else {
+            """
+            <html>
+            <body style="font-family: sans-serif; padding: 10px; width: 450px;">
+            <h2>🏰 书签宫殿使用说明</h2>
+            
+            <h3>📌 添加书签</h3>
+            <ul>
+                <li><b>快捷键：</b><code>Ctrl+Shift+B</code> - 添加书签（弹出对话框）</li>
+                <li><b>快速添加：</b><code>Ctrl+Alt+B</code> - 快速添加（无对话框）</li>
+                <li>在代码上<b>右键</b> → "添加书签"</li>
+            </ul>
+            
+            <h3>🔍 导航跳转</h3>
+            <ul>
+                <li><b>双击</b>列表中的书签即可跳转到代码位置</li>
+                <li>使用<b>搜索框</b>过滤书签</li>
+                <li>使用<b>分组</b>下拉框按文件/颜色/标签/状态组织</li>
+            </ul>
+            
+            <h3>🗺️ 导览图</h3>
+            <ul>
+                <li>点击<b>导览图</b>按钮打开导览图管理</li>
+                <li><b>编辑模式：</b>双击左侧书签添加到画布</li>
+                <li><b>查看模式：</b>点击节点链接跳转代码</li>
+                <li><b>分栏查看：</b>右键标签页 → "Split Right" 可左右分栏同时看图和代码</li>
+            </ul>
+            
+            <h3>📤 导入导出</h3>
+            <ul>
+                <li>支持 <b>JSON</b>、<b>Markdown</b>、<b>Mermaid</b> 格式</li>
+                <li>可与团队成员共享书签</li>
+            </ul>
+            
+            <h3>💡 使用技巧</h3>
+            <ul>
+                <li>书签会自动跟踪代码位置变化</li>
+                <li>使用<b>颜色</b>和<b>标签</b>分类管理书签</li>
+                <li>右键书签可进行更多操作</li>
+            </ul>
+            </body>
+            </html>
+            """.trimIndent()
+        }
+        
+        val label = JLabel(helpContent)
+        label.border = JBUI.Borders.empty(10)
+        
+        val scrollPane = JBScrollPane(label)
+        scrollPane.preferredSize = java.awt.Dimension(500, 450)
+        scrollPane.border = null
+        
+        JOptionPane.showMessageDialog(
+            null,
+            scrollPane,
+            if (Messages.isEnglish()) "BookmarkPalace Help" else "书签宫殿使用说明",
+            JOptionPane.INFORMATION_MESSAGE
+        )
     }
 
     /**
@@ -422,15 +521,15 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
             when (userObject) {
                 is Bookmark -> {
                     // 书签节点
-                    val statusIcon = when (userObject.status) {
-                        BookmarkStatus.VALID -> "●"
-                        BookmarkStatus.MISSING -> "✖"
-                        BookmarkStatus.OUTDATED -> "⚠"
-                    }
                     val colorIcon = getColorIcon(userObject.color)
+                    val statusIcon = when (userObject.status) {
+                        BookmarkStatus.VALID -> ""
+                        BookmarkStatus.MISSING -> " ✖"
+                        BookmarkStatus.OUTDATED -> " ⚠"
+                    }
                     val tags = if (userObject.tags.isNotEmpty()) " [${userObject.tags.joinToString(",")}]" else ""
 
-                    text = "$colorIcon ${userObject.getDisplayName()} (${userObject.getLocationDescription()})$tags"
+                    text = "$colorIcon ${userObject.getDisplayName()} (${userObject.getLocationDescription()})$tags$statusIcon"
 
                     if (userObject.status == BookmarkStatus.MISSING) {
                         foreground = java.awt.Color.RED

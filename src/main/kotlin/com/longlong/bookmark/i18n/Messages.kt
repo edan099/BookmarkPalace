@@ -28,7 +28,7 @@ object Messages {
     private fun get(zh: String, en: String) = if (isEnglish) en else zh
     
     // ===== 通用 =====
-    val pluginName get() = get("龙龙书签", "LongLong Bookmark")
+    val pluginName get() = get("书签宫殿", "BookmarkPalace")
     val ok get() = get("确定", "OK")
     val cancel get() = get("取消", "Cancel")
     val save get() = get("保存", "Save")
@@ -62,6 +62,7 @@ object Messages {
     val noBookmarks get() = get("暂无书签", "No Bookmarks")
     val quickAdd get() = get("快速添加", "Quick Add")
     val dragBookmarkHere get() = get("双击书签添加到画布", "Double-click to add")
+    val insertBookmark get() = get("插入书签", "Insert Bookmark")
     
     // ===== 导览图 =====
     val diagram get() = get("导览图", "Diagram")
@@ -69,6 +70,12 @@ object Messages {
     val newDiagram get() = get("新建导览图", "New Diagram")
     val openDiagram get() = get("打开导览图", "Open Diagram")
     val deleteDiagram get() = get("删除导览图", "Delete Diagram")
+    val renameDiagram get() = get("重命名导览图", "Rename Diagram")
+    val viewDiagram get() = get("查看导览图", "View Diagram")
+    val viewMode get() = get("查看模式", "View Mode")
+    val editMode get() = get("编辑模式", "Edit Mode")
+    val viewOnly get() = get("仅查看", "View Only")
+    val openView get() = get("打开查看", "Open View")
     val node get() = get("节点", "Node")
     val nodes get() = get("节点", "Nodes")
     val addNode get() = get("添加节点", "Add Node")
@@ -156,4 +163,13 @@ object Messages {
     val openInEditor get() = get("在编辑器中打开", "Open in Editor")
     val openInWindow get() = get("在窗口中打开", "Open in Window")
     val splitView get() = get("分栏视图", "Split View")
+    val splitViewTip get() = get("右键标签页可设置左右分栏，同时查看代码", "Right-click tab to split view with code")
+    val switchToEditMode get() = get("切换到编辑模式", "Switch to Edit Mode")
+    val clickNodeToJump get() = get("点击节点链接跳转代码", "Click node link to jump to code")
+    val saveAndView get() = get("保存并查看", "Save & View")
+    val saveAndViewTip get() = get("保存并切换到查看模式", "Save and switch to view mode")
+    
+    // ===== 帮助 =====
+    val help get() = get("使用说明", "Help")
+    val helpTip get() = get("查看使用说明", "View user guide")
 }

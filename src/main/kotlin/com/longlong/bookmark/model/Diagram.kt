@@ -111,6 +111,7 @@ data class Diagram(
     var type: DiagramType = DiagramType.CUSTOM_FLOW,
     var nodes: MutableList<DiagramNode> = mutableListOf(),
     var connections: MutableList<DiagramConnection> = mutableListOf(),
+    var metadata: MutableMap<String, Any> = mutableMapOf(),  // 存储 Draw.io XML 等额外数据
     var createdAt: Long = System.currentTimeMillis(),
     var updatedAt: Long = System.currentTimeMillis()
 ) {
@@ -233,6 +234,7 @@ data class DiagramDto(
     val type: String,
     val nodes: List<DiagramNodeDto>,
     val connections: List<DiagramConnectionDto>,
+    val drawioXml: String? = null,  // Draw.io XML 数据
     val createdAt: Long,
     val updatedAt: Long
 ) {
@@ -242,15 +244,23 @@ data class DiagramDto(
             type = diagram.type.name,
             nodes = diagram.nodes.map { DiagramNodeDto.fromNode(it) },
             connections = diagram.connections.map { DiagramConnectionDto.fromConnection(it) },
+            drawioXml = diagram.metadata["drawioXml"] as? String,
             createdAt = diagram.createdAt, updatedAt = diagram.updatedAt
         )
 
-        fun toDiagram(dto: DiagramDto) = Diagram(
-            id = dto.id, name = dto.name, description = dto.description,
-            type = try { DiagramType.valueOf(dto.type) } catch (e: Exception) { DiagramType.CUSTOM_FLOW },
-            nodes = dto.nodes.map { DiagramNodeDto.toNode(it) }.toMutableList(),
-            connections = dto.connections.map { DiagramConnectionDto.toConnection(it) }.toMutableList(),
-            createdAt = dto.createdAt, updatedAt = dto.updatedAt
-        )
+        fun toDiagram(dto: DiagramDto): Diagram {
+            val diagram = Diagram(
+                id = dto.id, name = dto.name, description = dto.description,
+                type = try { DiagramType.valueOf(dto.type) } catch (e: Exception) { DiagramType.CUSTOM_FLOW },
+                nodes = dto.nodes.map { DiagramNodeDto.toNode(it) }.toMutableList(),
+                connections = dto.connections.map { DiagramConnectionDto.toConnection(it) }.toMutableList(),
+                createdAt = dto.createdAt, updatedAt = dto.updatedAt
+            )
+            // 恢复 Draw.io XML
+            if (!dto.drawioXml.isNullOrBlank()) {
+                diagram.metadata["drawioXml"] = dto.drawioXml
+            }
+            return diagram
+        }
     }
 }

@@ -274,6 +274,11 @@ class BookmarkImporter(private val project: Project) {
             diagramCount = newDiagrams.size
         }
 
+        // 重要：刷新服务层的内存数据
+        bookmarkService.reloadFromStorage()
+        diagramService.reloadFromStorage()
+        tagService.reloadFromStorage()
+
         return ImportResult(
             bookmarkCount = bookmarkCount,
             diagramCount = diagramCount,

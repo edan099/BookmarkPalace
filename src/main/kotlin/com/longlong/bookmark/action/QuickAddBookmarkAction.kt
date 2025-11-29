@@ -45,7 +45,7 @@ class QuickAddBookmarkAction : AnAction(), DumbAware {
 
     private fun showNotification(project: com.intellij.openapi.project.Project, content: String, type: NotificationType) {
         NotificationGroupManager.getInstance()
-            .getNotificationGroup("LongLong Bookmark")
+            .getNotificationGroup("BookmarkPalace")
             .createNotification(content, type)
             .notify(project)
     }

@@ -69,10 +69,6 @@ class DiagramFileEditor(
         bar.add(JButton("+").apply { addActionListener { canvas.zoom(1.2) } })
         bar.add(JButton("-").apply { addActionListener { canvas.zoom(0.8) } })
         bar.add(zoomLabel)
-        bar.add(Box.createHorizontalGlue())
-        bar.add(JButton(Messages.switchLanguage).apply { 
-            addActionListener { Messages.toggleLanguage(); mainPanel.repaint() } 
-        })
         return bar
     }
 

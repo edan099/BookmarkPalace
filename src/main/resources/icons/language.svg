@@ -1,0 +1,8 @@
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 地球语言图标 -->
+  <circle cx="8" cy="8" r="6.5" stroke="#1E88E5" stroke-width="1.2" fill="none"/>
+  <ellipse cx="8" cy="8" rx="3" ry="6.5" stroke="#1E88E5" stroke-width="1"/>
+  <path d="M2 8H14" stroke="#1E88E5" stroke-width="1"/>
+  <path d="M3 5H13" stroke="#1E88E5" stroke-width="0.8"/>
+  <path d="M3 11H13" stroke="#1E88E5" stroke-width="0.8"/>
+</svg>

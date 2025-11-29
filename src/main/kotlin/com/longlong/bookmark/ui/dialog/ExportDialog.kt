@@ -10,6 +10,7 @@ import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import com.longlong.bookmark.export.BookmarkExporter
 import com.longlong.bookmark.export.ExportFormat
+import com.longlong.bookmark.i18n.Messages
 import java.awt.Component
 import javax.swing.*
 
@@ -24,7 +25,7 @@ class ExportDialog(private val project: Project) : DialogWrapper(project) {
     private val includeTagsCheck = JCheckBox("标签配置", true)
 
     init {
-        title = "导出龙龙书签"
+        title = Messages.export
         init()
     }
 
@@ -89,14 +90,14 @@ class ExportDialog(private val project: Project) : DialogWrapper(project) {
                 fileWrapper.file.writeText(content)
 
                 NotificationGroupManager.getInstance()
-                    .getNotificationGroup("LongLong Bookmark")
+                    .getNotificationGroup("BookmarkPalace")
                     .createNotification("导出成功: ${fileWrapper.file.path}", NotificationType.INFORMATION)
                     .notify(project)
 
                 super.doOKAction()
             } catch (e: Exception) {
                 NotificationGroupManager.getInstance()
-                    .getNotificationGroup("LongLong Bookmark")
+                    .getNotificationGroup("BookmarkPalace")
                     .createNotification("导出失败: ${e.message}", NotificationType.ERROR)
                     .notify(project)
             }

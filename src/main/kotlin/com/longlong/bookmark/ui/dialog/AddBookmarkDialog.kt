@@ -11,6 +11,7 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import com.longlong.bookmark.model.BookmarkColor
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.service.TagService
 import java.awt.BorderLayout
 import java.awt.Component
@@ -32,7 +33,7 @@ class AddBookmarkDialog(
     private val codePreview = JBTextArea(5, 40)
 
     init {
-        title = "添加龙龙书签"
+        title = Messages.addBookmark
         init()
 
         // 初始化代码预览
@@ -61,7 +62,7 @@ class AddBookmarkDialog(
         val fileName = virtualFile?.name ?: "Unknown"
 
         // 更新标题
-        title = "添加龙龙书签 - $fileName"
+        title = "${Messages.addBookmark} - $fileName"
     }
 
     override fun createCenterPanel(): JComponent {

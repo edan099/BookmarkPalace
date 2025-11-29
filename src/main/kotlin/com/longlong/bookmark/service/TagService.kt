@@ -170,6 +170,15 @@ class TagService(private val project: Project) {
         listeners.remove(listener)
     }
 
+    /**
+     * 从存储重新加载标签（用于导入后刷新）
+     */
+    fun reloadFromStorage() {
+        loadFromStorage()
+        // 通知所有标签已更新
+        tags.forEach { notifyTagUpdated(it) }
+    }
+
     // === 私有方法 ===
 
     private fun loadFromStorage() {

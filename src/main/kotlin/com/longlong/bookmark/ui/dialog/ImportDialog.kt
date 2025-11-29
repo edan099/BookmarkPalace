@@ -11,6 +11,7 @@ import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import com.longlong.bookmark.export.BookmarkImporter
+import com.longlong.bookmark.i18n.Messages
 import java.awt.BorderLayout
 import java.awt.Dimension
 import javax.swing.*
@@ -25,7 +26,7 @@ class ImportDialog(private val project: Project) : DialogWrapper(project) {
     private val replaceRadio = JRadioButton("替换（清空现有书签）")
 
     init {
-        title = "导入龙龙书签"
+        title = Messages.import
         init()
     }
 
@@ -81,7 +82,7 @@ class ImportDialog(private val project: Project) : DialogWrapper(project) {
                 contentArea.text = String(file.contentsToByteArray())
             } catch (e: Exception) {
                 NotificationGroupManager.getInstance()
-                    .getNotificationGroup("LongLong Bookmark")
+                    .getNotificationGroup("BookmarkPalace")
                     .createNotification("读取文件失败: ${e.message}", NotificationType.ERROR)
                     .notify(project)
             }
@@ -105,7 +106,7 @@ class ImportDialog(private val project: Project) : DialogWrapper(project) {
             val result = importer.import(content, replaceRadio.isSelected)
 
             NotificationGroupManager.getInstance()
-                .getNotificationGroup("LongLong Bookmark")
+                .getNotificationGroup("BookmarkPalace")
                 .createNotification(
                     "导入成功: ${result.bookmarkCount} 个书签, ${result.diagramCount} 个导览图",
                     NotificationType.INFORMATION
@@ -115,7 +116,7 @@ class ImportDialog(private val project: Project) : DialogWrapper(project) {
             super.doOKAction()
         } catch (e: Exception) {
             NotificationGroupManager.getInstance()
-                .getNotificationGroup("LongLong Bookmark")
+                .getNotificationGroup("BookmarkPalace")
                 .createNotification("导入失败: ${e.message}", NotificationType.ERROR)
                 .notify(project)
         }

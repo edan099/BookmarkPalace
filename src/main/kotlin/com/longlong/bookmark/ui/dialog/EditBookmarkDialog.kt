@@ -11,6 +11,7 @@ import com.intellij.util.ui.JBUI
 import com.longlong.bookmark.model.Bookmark
 import com.longlong.bookmark.model.BookmarkColor
 import com.longlong.bookmark.model.BookmarkStatus
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.service.TagService
 import java.awt.Component
 import java.awt.Dimension
@@ -31,7 +32,7 @@ class EditBookmarkDialog(
     private val codePreview = JBTextArea(5, 40)
 
     init {
-        title = "编辑龙龙书签"
+        title = Messages.editBookmark
         init()
 
         // 填充现有数据

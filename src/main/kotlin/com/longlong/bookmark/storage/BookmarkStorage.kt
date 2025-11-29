@@ -183,6 +183,9 @@ class DiagramStorageItem {
     var type: String = "CUSTOM_FLOW"
     var createdAt: Long = 0
     var updatedAt: Long = 0
+    
+    // Draw.io XML 内容（核心数据）
+    var drawioXml: String = ""
 
     @XCollection(style = XCollection.Style.v2)
     var nodes: MutableList<DiagramNodeStorageItem> = mutableListOf()
@@ -191,7 +194,7 @@ class DiagramStorageItem {
     var connections: MutableList<DiagramConnectionStorageItem> = mutableListOf()
 
     fun toDiagram(): Diagram {
-        return Diagram(
+        val diagram = Diagram(
             id = id,
             name = name,
             description = description,
@@ -201,6 +204,11 @@ class DiagramStorageItem {
             createdAt = createdAt,
             updatedAt = updatedAt
         )
+        // 恢复 Draw.io XML 到 metadata
+        if (drawioXml.isNotBlank()) {
+            diagram.metadata["drawioXml"] = drawioXml
+        }
+        return diagram
     }
 
     companion object {
@@ -210,6 +218,8 @@ class DiagramStorageItem {
                 name = diagram.name
                 description = diagram.description
                 type = diagram.type.name
+                // 保存 Draw.io XML
+                drawioXml = (diagram.metadata["drawioXml"] as? String) ?: ""
                 nodes = diagram.nodes.map { DiagramNodeStorageItem.fromNode(it) }.toMutableList()
                 connections = diagram.connections.map { DiagramConnectionStorageItem.fromConnection(it) }.toMutableList()
                 createdAt = diagram.createdAt

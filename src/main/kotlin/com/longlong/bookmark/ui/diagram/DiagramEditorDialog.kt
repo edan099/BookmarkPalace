@@ -64,13 +64,6 @@ class DiagramEditorDialog(
         bar.add(JButton("100%").apply { addActionListener { canvas.resetZoom() } })
         zoomLabel = JLabel("100%")
         bar.add(zoomLabel)
-        bar.add(Box.createHorizontalGlue())
-        bar.add(JButton(Messages.switchLanguage).apply { 
-            addActionListener { 
-                Messages.toggleLanguage()
-                refreshUI()
-            } 
-        })
         return bar
     }
 

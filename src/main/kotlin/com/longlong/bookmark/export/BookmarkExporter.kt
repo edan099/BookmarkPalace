@@ -89,7 +89,7 @@ class BookmarkExporter(private val project: Project) {
     private fun exportMarkdown(includeBookmarks: Boolean, includeDiagrams: Boolean): String {
         val sb = StringBuilder()
 
-        sb.appendLine("# 🐉 龙龙书签导出")
+        sb.appendLine("# 🏰 BookmarkPalace 书签导出")
         sb.appendLine()
         sb.appendLine("项目: ${project.name}")
         sb.appendLine("导出时间: ${java.time.LocalDateTime.now()}")
