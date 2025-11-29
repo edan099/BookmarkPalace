@@ -1,5 +1,6 @@
 package com.longlong.bookmark.service
 
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 
@@ -14,5 +15,11 @@ class ProjectOpenListener : ProjectManagerListener {
         TagService.getInstance(project)
         DiagramService.getInstance(project)
         FileChangeListener.getInstance(project)
+        
+        // 注册导览图编辑器关闭监听器
+        project.messageBus.connect().subscribe(
+            FileEditorManagerListener.FILE_EDITOR_MANAGER,
+            DiagramEditorManagerListener(project)
+        )
     }
 }

@@ -239,8 +239,7 @@ flowchart TD
 
 | 渠道 | 信息 |
 |------|------|
-| 📧 邮箱 | longlongcoder@qq.com |
-| 🐙 GitHub | [github.com/longlongcoder](https://github.com/longlongcoder) |
+| 📧 邮箱 | edan_d@qq.com |
 | 📺 抖音 | 扫码关注（见插件内） |
 
 <p align="center">
@@ -255,6 +254,6 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 <p align="center">
   <strong>🏰 BookmarkPalace</strong> - 让代码导航更高效！<br>
-  <sub>Made with ❤️ by 龙龙 longlongcoder</sub><br>
+  <sub>Made with ❤️ by Edan</sub><br>
   <sub>感谢每一位支持者！</sub>
 </p>

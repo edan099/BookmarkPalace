@@ -21,6 +21,9 @@ import com.longlong.bookmark.service.BookmarkService
 import com.longlong.bookmark.service.DiagramService
 import com.google.gson.Gson
 import java.awt.BorderLayout
+import java.awt.Toolkit
+import java.awt.event.ActionEvent
+import java.awt.event.KeyEvent
 import java.beans.PropertyChangeListener
 import javax.swing.*
 import javax.swing.DefaultListModel
@@ -81,11 +84,56 @@ class DrawioJcefEditor(
     // 缓存当前画布的 XML（通过 autosave 更新）
     private var currentCanvasXml: String? = null
     
+    // 修改跟踪
+    private var modified = false
+    private val propertyChangeListeners = mutableListOf<PropertyChangeListener>()
+    
     init {
         setupUI()
         setupJavaScriptBridge()
         setupLinkInterceptor()
+        setupKeyBindings()
         loadDrawio()
+    }
+    
+    private fun setupKeyBindings() {
+        // Command+S (Mac) / Ctrl+S (Win/Linux) 保存
+        val saveAction = object : AbstractAction() {
+            override fun actionPerformed(e: ActionEvent?) {
+                save()
+            }
+        }
+        // 注册到多个层级确保能捕获
+        mainPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx),
+            "saveDiagram"
+        )
+        mainPanel.actionMap.put("saveDiagram", saveAction)
+        
+        // 也注册到 browser component
+        browser.component.getInputMap(JComponent.WHEN_FOCUSED).put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx),
+            "saveDiagram"
+        )
+        browser.component.actionMap.put("saveDiagram", saveAction)
+    }
+    
+    /**
+     * 保存导览图 - public 方法供外部调用
+     */
+    fun save() {
+        saveDiagram()
+    }
+    
+    private fun setModified(value: Boolean) {
+        if (modified != value) {
+            modified = value
+            propertyChangeListeners.forEach {
+                it.propertyChange(java.beans.PropertyChangeEvent(
+                    this, FileEditor.PROP_MODIFIED, !value, value
+                ))
+            }
+        }
     }
     
     /**
@@ -371,11 +419,11 @@ class DrawioJcefEditor(
         } else {
             // 编辑模式：完整工具栏
             // 折叠/展开书签列表按钮
-            val toggleBtn = JButton("◀ 收起书签").apply {
-                toolTipText = "收起/展开书签列表"
+            val toggleBtn = JButton(Messages.collapseBookmarks).apply {
+                toolTipText = Messages.toggleBookmarksTip
                 addActionListener {
                     toggleBookmarkPanel()
-                    text = if (bookmarkPanelVisible) "◀ 收起书签" else "▶ 展开书签"
+                    text = if (bookmarkPanelVisible) Messages.collapseBookmarks else Messages.expandBookmarks
                 }
             }
             toolbar.add(toggleBtn)
@@ -406,7 +454,7 @@ class DrawioJcefEditor(
                 maximumSize = java.awt.Dimension(2, 24)
             })
             toolbar.add(Box.createHorizontalStrut(16))
-            toolbar.add(JLabel("📌 点击节点链接跳转代码").apply {
+            toolbar.add(JLabel("📌 ${Messages.clickNodeToJump}").apply {
                 foreground = java.awt.Color(0, 120, 215)
             })
         }
@@ -793,6 +841,32 @@ class DrawioJcefEditor(
                 format: 'svg'
             }), '*');
         };
+        
+        // 监听键盘事件，捕获 Command+S / Ctrl+S
+        document.addEventListener('keydown', function(e) {
+            // Check for Ctrl+S or Command+S
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                console.log('💾 Save shortcut detected!');
+                // 发送保存请求到 Java
+                ${jsQuery.inject("JSON.stringify({event: 'saveRequested'})")}
+            }
+        });
+        
+        // 也监听 iframe 内的键盘事件
+        iframe.addEventListener('load', function() {
+            try {
+                iframe.contentDocument.addEventListener('keydown', function(e) {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        console.log('💾 Save shortcut in iframe detected!');
+                        ${jsQuery.inject("JSON.stringify({event: 'saveRequested'})")}
+                    }
+                });
+            } catch (err) {
+                console.log('Cannot add keydown listener to iframe:', err);
+            }
+        });
     </script>
 </body>
 </html>
@@ -919,11 +993,13 @@ class DrawioJcefEditor(
                     }
                 }
                 "autosave" -> {
-                    // 自动保存 - 仅缓存当前画布 XML（用户点击保存按钮时再写入文件）
+                    // 自动保存 - 自动保存到文件
                     val xml = message["xml"] as? String
-                    if (xml != null) {
-                        logger.debug("📦 Autosave received, caching XML (length: ${xml.length})")
+                    if (xml != null && xml.contains("<mxGraphModel")) {
+                        logger.debug("📦 Autosave received, auto-saving XML (length: ${xml.length})")
                         currentCanvasXml = xml
+                        // 自动保存到文件（静默保存，不显示提示）
+                        autoSaveDiagramXml(xml)
                     }
                 }
                 "openLink" -> {
@@ -934,6 +1010,11 @@ class DrawioJcefEditor(
                         val bookmarkId = link.removePrefix("bookmark://")
                         navigateToBookmark(bookmarkId)
                     }
+                }
+                "saveRequested" -> {
+                    // 用户按了 Command+S / Ctrl+S
+                    logger.debug("💾 Save requested via keyboard shortcut")
+                    saveDiagram()
                 }
             }
             
@@ -1151,6 +1232,27 @@ class DrawioJcefEditor(
         """.trimIndent())
     }
 
+    /**
+     * 自动保存（静默，不显示提示）
+     * 每次编辑后自动保存到文件，确保不会丢失数据
+     */
+    private fun autoSaveDiagramXml(xml: String) {
+        try {
+            diagram.metadata["drawioXml"] = xml
+            diagramService.updateDiagram(diagram)
+            logger.debug("📦 Auto-saved diagram XML (length: ${xml.length})")
+            // 自动保存后标记为未修改，因为数据已经保存了
+            if (modified) {
+                setModified(false)
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to auto-save diagram", e)
+        }
+    }
+    
+    /**
+     * 手动保存（显示提示）
+     */
     private fun saveDiagramXml(xml: String) {
         try {
             logger.debug("💾 Saving diagram XML, length: ${xml.length}")
@@ -1159,9 +1261,13 @@ class DrawioJcefEditor(
             diagramService.updateDiagram(diagram)
             logger.debug("✅ Diagram saved successfully!")
             
+            // 标记为未修改
+            setModified(false)
+            
             // 显示保存成功提示
             ApplicationManager.getApplication().invokeLater {
-                executeJS("status.textContent = '✅ 保存成功'; status.style.display = 'block'; status.style.background = '#4caf50'; setTimeout(() => status.style.display = 'none', 2000);")
+                val message = if (Messages.isEnglish()) "✅ Saved" else "✅ 保存成功"
+                executeJS("status.textContent = '$message'; status.style.display = 'block'; status.style.background = '#4caf50'; setTimeout(() => status.style.display = 'none', 2000);")
             }
         } catch (e: Exception) {
             logger.error("Failed to save diagram", e)
@@ -1200,14 +1306,15 @@ class DrawioJcefEditor(
             diagramService.updateDiagram(diagram)
             logger.debug("✅ Diagram saved, switching to view mode...")
             
-            ApplicationManager.getApplication().invokeLater {
-                executeJS("status.textContent = '✅ 保存成功，正在切换到查看模式...'; status.style.display = 'block'; status.style.background = '#4caf50';")
-                
-                javax.swing.Timer(800) {
+            executeJS("status.textContent = '✅ 保存成功，正在切换到查看模式...'; status.style.display = 'block'; status.style.background = '#4caf50';")
+            
+            // 使用 invokeLater 确保在正确的写操作上下文中执行
+            javax.swing.Timer(800) {
+                ApplicationManager.getApplication().invokeLater {
                     FileEditorManager.getInstance(project).closeFile(file)
                     DiagramEditorProvider.openDiagramInEditor(project, diagram, viewOnly = true)
-                }.apply { isRepeats = false; start() }
-            }
+                }
+            }.apply { isRepeats = false; start() }
         } catch (e: Exception) {
             logger.error("Failed to save and switch", e)
         }
@@ -1217,6 +1324,7 @@ class DrawioJcefEditor(
      * 切换到编辑模式
      */
     private fun switchToEditMode() {
+        // 使用 invokeLater 确保在正确的写操作上下文中执行
         ApplicationManager.getApplication().invokeLater {
             FileEditorManager.getInstance(project).closeFile(file)
             DiagramEditorProvider.openDiagramInEditor(project, diagram, viewOnly = false)
@@ -1363,14 +1471,23 @@ class DrawioJcefEditor(
     override fun getName(): String = if (viewOnly) "📖 ${diagram.name}" else "✏️ ${diagram.name}"
     override fun setState(state: FileEditorState) {}
     override fun getState(level: FileEditorStateLevel): FileEditorState = FileEditorState.INSTANCE
-    override fun isModified(): Boolean = false
+    override fun isModified(): Boolean = modified && !viewOnly
     override fun isValid(): Boolean = true
-    override fun addPropertyChangeListener(listener: PropertyChangeListener) {}
-    override fun removePropertyChangeListener(listener: PropertyChangeListener) {}
+    
+    override fun addPropertyChangeListener(listener: PropertyChangeListener) {
+        propertyChangeListeners.add(listener)
+    }
+    
+    override fun removePropertyChangeListener(listener: PropertyChangeListener) {
+        propertyChangeListeners.remove(listener)
+    }
+    
     override fun getCurrentLocation(): FileEditorLocation? = null
     override fun getFile(): VirtualFile = file
     
     override fun dispose() {
+        // dispose 是在关闭后调用的，不需要弹窗
+        // 关闭前的保存提示由 DiagramEditorManagerListener 处理
         browser.dispose()
     }
 }

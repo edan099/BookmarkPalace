@@ -5,7 +5,7 @@
     <!-- 资源包，用于国际化 -->
     <resource-bundle>messages.LongLongBookmarkBundle</resource-bundle>
     <version>1.0.0</version>
-    <vendor email="longlongcoder@qq.com" url="https://github.com/longlongcoder">龙龙 longlongcoder</vendor>
+    <vendor email="edan_d@qq.com">Edan</vendor>
 
     <description><![CDATA[
     <h2>🏰 BookmarkPalace · 书签宫殿</h2>
@@ -28,7 +28,7 @@
         <li>与 AI 协作分析代码</li>
     </ul>
     
-    <p><i>Made by 龙龙 longlongcoder</i></p>
+    <p><i>Made with ❤️ by Edan</i></p>
     ]]></description>
 
     <change-notes><![CDATA[
@@ -98,13 +98,13 @@
         
         <!-- 导览图文件类型（编辑模式） -->
         <fileType
-                name="BookmarkPalace Diagram"
+                name="LongLong Diagram"
                 implementationClass="com.longlong.bookmark.ui.diagram.DiagramFileType"
                 extensions="lldiagram"/>
         
         <!-- 导览图文件类型（查看模式） -->
         <fileType
-                name="BookmarkPalace Diagram View"
+                name="LongLong Diagram View"
                 implementationClass="com.longlong.bookmark.ui.diagram.DiagramViewFileType"
                 extensions="lldiagramview"/>
         
@@ -132,16 +132,18 @@
     <actions>
         <!-- 主菜单组 -->
         <group id="BookmarkPalace.MainMenu"
+               class="com.longlong.bookmark.action.BookmarkPalaceMenuGroup"
+               icon="/icons/logo.svg"
                popup="true">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="menu.name"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </group>
 
         <!-- 添加书签 -->
         <action id="BookmarkPalace.AddBookmark"
                 class="com.longlong.bookmark.action.AddBookmarkAction"
+                text="添加书签"
+                description="添加代码书签"
                 icon="/icons/add_bookmark.svg">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="action.add.bookmark"/>
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="first"/>
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift B"/>
@@ -150,8 +152,9 @@
         <!-- 快速添加书签（无对话框） -->
         <action id="BookmarkPalace.QuickAddBookmark"
                 class="com.longlong.bookmark.action.QuickAddBookmarkAction"
+                text="快速添加书签"
+                description="快速添加/删除书签（无对话框）"
                 icon="/icons/quick_add.svg">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="action.quick.add"/>
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
                           relative-to-action="BookmarkPalace.AddBookmark"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt B"/>
@@ -160,8 +163,9 @@
         <!-- 显示书签列表 -->
         <action id="BookmarkPalace.ShowBookmarks"
                 class="com.longlong.bookmark.action.ShowBookmarksAction"
+                text="显示书签列表"
+                description="打开书签宫殿工具窗口"
                 icon="/icons/bookmark_list.svg">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="action.show.bookmarks"/>
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
                           relative-to-action="BookmarkPalace.QuickAddBookmark"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift M"/>
@@ -170,8 +174,9 @@
         <!-- 打开导览图 -->
         <action id="BookmarkPalace.OpenDiagram"
                 class="com.longlong.bookmark.action.OpenDiagramAction"
+                text="打开导览图"
+                description="打开或创建导览图"
                 icon="/icons/diagram.svg">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="action.open.diagram"/>
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
                           relative-to-action="BookmarkPalace.ShowBookmarks"/>
         </action>
@@ -179,8 +184,9 @@
         <!-- 导出 -->
         <action id="BookmarkPalace.Export"
                 class="com.longlong.bookmark.action.ExportAction"
+                text="导出书签"
+                description="导出书签为 JSON/Markdown/Mermaid 格式"
                 icon="/icons/export.svg">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="action.export"/>
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
                           relative-to-action="BookmarkPalace.OpenDiagram"/>
         </action>
@@ -188,8 +194,9 @@
         <!-- 导入 -->
         <action id="BookmarkPalace.Import"
                 class="com.longlong.bookmark.action.ImportAction"
+                text="导入书签"
+                description="从文件导入书签"
                 icon="/icons/import.svg">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="action.import"/>
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
                           relative-to-action="BookmarkPalace.Export"/>
         </action>
@@ -206,8 +213,9 @@
         <!-- 打赏与联系 -->
         <action id="BookmarkPalace.Donate"
                 class="com.longlong.bookmark.action.DonateAction"
+                text="☕ 打赏与联系 | Donate &amp; Contact"
+                description="请作者喝杯咖啡，查看联系方式"
                 icon="/icons/donate.svg">
-            <override-text bundle="messages.LongLongBookmarkBundle" key="action.donate"/>
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="last"/>
         </action>
     </actions>

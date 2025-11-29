@@ -409,5 +409,5 @@ allprojects {
 
 <p align="center">
   <strong>🏰 BookmarkPalace</strong> - 让代码导航更高效！<br>
-  <sub>Made with ❤️ by 龙龙 longlongcoder</sub>
+  <sub>Made with ❤️ by Edan</sub>
 </p>

@@ -180,8 +180,7 @@ class DonateDialog(project: Project?) : DialogWrapper(project) {
         infoPanel.border = JBUI.Borders.empty(0, 0, 0, 20)
 
         val contactItems = listOf(
-            ContactItem("📧 邮箱 Email", "longlongcoder@qq.com", null),
-            ContactItem("🐙 GitHub", "github.com/longlongcoder", "https://github.com/longlongcoder"),
+            ContactItem("📧 邮箱 Email", "edan_d@qq.com", null),
             ContactItem("📺 抖音 Douyin", "扫码关注 →", null)
         )
 
@@ -258,7 +257,7 @@ class DonateDialog(project: Project?) : DialogWrapper(project) {
         val panel = JPanel(FlowLayout(FlowLayout.CENTER))
         panel.border = JBUI.Borders.empty(15, 0, 0, 0)
 
-        val footerLabel = JBLabel("<html><center><font color='gray'>Made with ❤️ by 龙龙 longlongcoder<br>" +
+        val footerLabel = JBLabel("<html><center><font color='gray'>Made with ❤️ by Edan<br>" +
                 "每一份支持都是我持续更新的动力！</font></center></html>")
         footerLabel.horizontalAlignment = SwingConstants.CENTER
         panel.add(footerLabel)

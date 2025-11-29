@@ -1,10 +1,12 @@
 package com.longlong.bookmark.ui.diagram
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.FileEditorStateLevel
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages as IdeMessages
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.SearchTextField
@@ -39,9 +41,72 @@ class DiagramFileEditor(
     private val canvas = DiagramEditorCanvas()
     private val propertyPanel = QuickPropertyPanel()
     private var zoomLabel = JLabel("100%")
+    
+    // 修改跟踪
+    private var modified = false
+    private val propertyChangeListeners = mutableListOf<PropertyChangeListener>()
 
     init {
         setupUI()
+        setupKeyBindings()
+    }
+    
+    private fun setupKeyBindings() {
+        // Command+S (Mac) / Ctrl+S (Win/Linux) 保存
+        val saveAction = object : AbstractAction() {
+            override fun actionPerformed(e: ActionEvent?) {
+                save()
+            }
+        }
+        // 注册到多个层级确保能捕获
+        mainPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx),
+            "saveDiagram"
+        )
+        mainPanel.actionMap.put("saveDiagram", saveAction)
+        
+        // 也注册到 canvas
+        canvas.getInputMap(JComponent.WHEN_FOCUSED).put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().menuShortcutKeyMaskEx),
+            "saveDiagram"
+        )
+        canvas.actionMap.put("saveDiagram", saveAction)
+    }
+    
+    /**
+     * 手动保存（显示提示）- public 方法供外部调用
+     */
+    fun save() {
+        diagramService.updateDiagram(diagram)
+        if (modified) {
+            setModified(false)
+            ApplicationManager.getApplication().invokeLater {
+                val message = if (Messages.isEnglish()) "Diagram saved" else "导览图已保存"
+                IdeMessages.showInfoMessage(project, message, Messages.diagram)
+            }
+        }
+    }
+    
+    /**
+     * 自动保存（静默，不显示提示）
+     * 每次编辑后自动保存，确保不丢失数据
+     */
+    private fun autoSave() {
+        diagramService.updateDiagram(diagram)
+        if (modified) {
+            setModified(false)
+        }
+    }
+    
+    private fun setModified(value: Boolean) {
+        if (modified != value) {
+            modified = value
+            propertyChangeListeners.forEach {
+                it.propertyChange(java.beans.PropertyChangeEvent(
+                    this, FileEditor.PROP_MODIFIED, !value, value
+                ))
+            }
+        }
     }
 
     private fun createDefaultDiagram(): Diagram {
@@ -112,6 +177,7 @@ class DiagramFileEditor(
         if (!label.isNullOrBlank()) {
             val node = DiagramNode(label = label, x = 100 + Math.random() * 200, y = 100 + Math.random() * 150)
             diagramService.addNodeToDiagram(diagram.id, node)
+            autoSave()
             canvas.repaint()
         }
     }
@@ -121,6 +187,7 @@ class DiagramFileEditor(
         if (node != null) {
             node.x = 100 + Math.random() * 200
             node.y = 100 + Math.random() * 150
+            autoSave()
             canvas.repaint()
         }
     }
@@ -130,11 +197,13 @@ class DiagramFileEditor(
             diagramService.removeNodeFromDiagram(diagram.id, it.id)
             canvas.selectedNode = null
             propertyPanel.clear()
+            autoSave()
         }
         canvas.selectedConnection?.let {
             diagramService.removeConnectionFromDiagram(diagram.id, it.id)
             canvas.selectedConnection = null
             propertyPanel.clear()
+            autoSave()
         }
         canvas.repaint()
     }
@@ -159,7 +228,7 @@ class DiagramFileEditor(
             content.add(JButton(Messages.editNode).apply {
                 addActionListener {
                     val label = JOptionPane.showInputDialog(this@QuickPropertyPanel, Messages.name, node.label)
-                    if (label != null) { node.label = label; diagramService.updateDiagram(diagram); canvas.repaint() }
+                    if (label != null) { node.label = label; diagramService.updateDiagram(diagram); autoSave(); canvas.repaint() }
                 }
             })
             content.revalidate()
@@ -172,7 +241,7 @@ class DiagramFileEditor(
             content.add(JButton(Messages.editConnection).apply {
                 addActionListener {
                     val label = JOptionPane.showInputDialog(this@QuickPropertyPanel, Messages.connectionLabel, conn.label)
-                    if (label != null) { conn.label = label; diagramService.updateDiagram(diagram); canvas.repaint() }
+                    if (label != null) { conn.label = label; diagramService.updateDiagram(diagram); autoSave(); canvas.repaint() }
                 }
             })
             content.revalidate()
@@ -269,6 +338,7 @@ class DiagramFileEditor(
                                     reverse.curveOffset = -25.0
                                     diagramService.updateDiagram(diagram)
                                 }
+                                autoSave()
                             }
                         }
                         isDrawingConnection = false
@@ -276,7 +346,10 @@ class DiagramFileEditor(
                         repaint()
                     }
 
-                    dragNode?.let { diagramService.updateNodePosition(diagram.id, it.id, it.x, it.y) }
+                    dragNode?.let { 
+                        diagramService.updateNodePosition(diagram.id, it.id, it.x, it.y)
+                        autoSave()
+                    }
                     dragNode = null
                 }
 
@@ -284,7 +357,7 @@ class DiagramFileEditor(
                     if (e.clickCount == 2) {
                         selectedNode?.let { 
                             val label = JOptionPane.showInputDialog(this@DiagramEditorCanvas, Messages.name, it.label)
-                            if (label != null) { it.label = label; diagramService.updateDiagram(diagram); repaint() }
+                            if (label != null) { it.label = label; diagramService.updateDiagram(diagram); autoSave(); repaint() }
                         }
                     }
                 }
@@ -427,11 +500,22 @@ class DiagramFileEditor(
     override fun getName(): String = "Diagram: ${diagram.name}"
     override fun setState(state: FileEditorState) {}
     override fun getState(level: FileEditorStateLevel): FileEditorState = FileEditorState.INSTANCE
-    override fun isModified(): Boolean = false
+    override fun isModified(): Boolean = modified
     override fun isValid(): Boolean = true
-    override fun addPropertyChangeListener(listener: PropertyChangeListener) {}
-    override fun removePropertyChangeListener(listener: PropertyChangeListener) {}
+    
+    override fun addPropertyChangeListener(listener: PropertyChangeListener) {
+        propertyChangeListeners.add(listener)
+    }
+    
+    override fun removePropertyChangeListener(listener: PropertyChangeListener) {
+        propertyChangeListeners.remove(listener)
+    }
+    
     override fun getCurrentLocation(): FileEditorLocation? = null
-    override fun dispose() {}
     override fun getFile(): VirtualFile = file
+    
+    override fun dispose() {
+        // dispose 是在关闭后调用的，不需要弹窗
+        // 关闭前的保存提示由 DiagramEditorManagerListener 处理
+    }
 }

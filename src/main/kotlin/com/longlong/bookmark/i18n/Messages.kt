@@ -1,18 +1,35 @@
 package com.longlong.bookmark.i18n
 
 import com.intellij.ide.util.PropertiesComponent
+import java.util.Locale
 
 /**
  * 全局多语言支持 - 整个插件使用（带持久化）
  */
 object Messages {
     
-    private const val LANGUAGE_KEY = "longlong.bookmark.language"
+    private const val LANGUAGE_KEY = "bookmarkpalace.language"
+    private const val LANGUAGE_INITIALIZED_KEY = "bookmarkpalace.language.initialized"
     private var isEnglish = false
     
     init {
-        // 从持久化存储加载语言设置
-        isEnglish = PropertiesComponent.getInstance().getBoolean(LANGUAGE_KEY, false)
+        val properties = PropertiesComponent.getInstance()
+        
+        // 检查是否已经初始化过语言设置
+        val initialized = properties.getBoolean(LANGUAGE_INITIALIZED_KEY, false)
+        
+        if (initialized) {
+            // 已初始化，使用保存的设置
+            isEnglish = properties.getBoolean(LANGUAGE_KEY, true)
+        } else {
+            // 首次运行，根据系统/IDE 语言自动选择
+            val systemLanguage = Locale.getDefault().language
+            isEnglish = systemLanguage != "zh" // 如果不是中文，则使用英文
+            
+            // 保存初始化状态和语言设置
+            properties.setValue(LANGUAGE_INITIALIZED_KEY, true)
+            properties.setValue(LANGUAGE_KEY, isEnglish)
+        }
     }
     
     fun toggleLanguage() { 
@@ -172,4 +189,17 @@ object Messages {
     // ===== 帮助 =====
     val help get() = get("使用说明", "Help")
     val helpTip get() = get("查看使用说明", "View user guide")
+    
+    // ===== 其他菜单项 =====
+    val quickAddBookmark get() = get("快速添加书签", "Quick Add Bookmark")
+    val donate get() = get("☕ 打赏与联系", "☕ Donate & Contact")
+    val diagnoseDiagramEditor get() = get("诊断导览图编辑器", "Diagnose Diagram Editor")
+    
+    // ===== 导览图编辑器 =====
+    val collapseBookmarks get() = get("◀ 收起书签", "◀ Collapse")
+    val expandBookmarks get() = get("▶ 展开书签", "▶ Expand")
+    val toggleBookmarksTip get() = get("收起/展开书签列表", "Collapse/Expand bookmark list")
+    val viewOnlyTip get() = get("仅查看模式（不可编辑，点击节点跳转代码）", "View only mode (not editable, click node to jump to code)")
+    val openInEditorTip get() = get("在编辑器中打开（支持分栏，可边看图边看代码）", "Open in editor (supports split view)")
+    val openInWindowTip get() = get("在弹窗中打开编辑", "Open in popup window")
 }

@@ -33,6 +33,9 @@ object BookmarkPalaceIcons {
     // === 刷新 ===
     @JvmField val Refresh = load("/icons/refresh.svg")
     
+    // === 打赏 ===
+    @JvmField val Donate = load("/icons/donate.svg")
+    
     private fun load(path: String): Icon {
         return IconLoader.getIcon(path, BookmarkPalaceIcons::class.java)
     }

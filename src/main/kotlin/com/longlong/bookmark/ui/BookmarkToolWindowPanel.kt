@@ -16,6 +16,7 @@ import com.longlong.bookmark.model.BookmarkStatus
 import com.longlong.bookmark.service.BookmarkChangeListener
 import com.longlong.bookmark.service.BookmarkService
 import com.longlong.bookmark.ui.dialog.AddBookmarkDialog
+import com.longlong.bookmark.ui.dialog.DonateDialog
 import com.longlong.bookmark.ui.dialog.EditBookmarkDialog
 import com.longlong.bookmark.ui.dialog.ExportDialog
 import com.longlong.bookmark.ui.dialog.ImportDialog
@@ -217,6 +218,17 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
                 }
                 override fun update(e: AnActionEvent) {
                     e.presentation.text = Messages.switchLanguage
+                }
+            })
+
+            addSeparator()
+
+            add(object : AnAction("☕ 打赏", "请作者喝杯咖啡", BookmarkPalaceIcons.Donate) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    DonateDialog(project).show()
+                }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = if (Messages.isEnglish()) "☕ Donate" else "☕ 打赏"
                 }
             })
         }

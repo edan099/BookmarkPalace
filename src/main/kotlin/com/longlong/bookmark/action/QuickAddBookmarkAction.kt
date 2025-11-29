@@ -40,7 +40,7 @@ class QuickAddBookmarkAction : AnAction(), DumbAware {
     override fun update(e: AnActionEvent) {
         val editor = e.getData(CommonDataKeys.EDITOR)
         e.presentation.isEnabledAndVisible = editor != null
-        e.presentation.text = Messages.quickAdd
+        e.presentation.text = Messages.quickAddBookmark
     }
 
     private fun showNotification(project: com.intellij.openapi.project.Project, content: String, type: NotificationType) {

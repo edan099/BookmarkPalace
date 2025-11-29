@@ -166,17 +166,17 @@ class DiagramSelectorDialog(private val project: Project) : DialogWrapper(projec
         })
         
         row1.add(JButton(Messages.openInEditor).apply {
-            toolTipText = "在编辑器中打开（支持分栏，可边看图边看代码）"
+            toolTipText = Messages.openInEditorTip
             addActionListener { openSelectedDiagram(inEditor = true, viewOnly = false) }
         })
         
         row1.add(JButton(Messages.viewOnly).apply {
-            toolTipText = "仅查看模式（不可编辑，点击节点跳转代码）"
+            toolTipText = Messages.viewOnlyTip
             addActionListener { openSelectedDiagram(inEditor = true, viewOnly = true) }
         })
         
         row1.add(JButton(Messages.openInWindow).apply {
-            toolTipText = "在弹窗中打开编辑"
+            toolTipText = Messages.openInWindowTip
             addActionListener { openSelectedDiagram(inEditor = false, viewOnly = false) }
         })
         
