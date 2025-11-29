@@ -378,63 +378,46 @@ class DrawioJcefEditor(
     }
 
     private fun createToolbar(): JPanel {
-        val toolbar = JPanel()
-        toolbar.layout = BoxLayout(toolbar, BoxLayout.X_AXIS)
-        toolbar.border = BorderFactory.createEmptyBorder(2, 4, 2, 4)
+        // 使用自定义 WrapLayout 实现自动换行
+        val toolbar = JPanel(WrapLayout(java.awt.FlowLayout.LEFT, 4, 2))
         
         if (viewOnly) {
             // 查看模式：简洁工具栏
-            toolbar.add(JLabel("👁").apply {
+            toolbar.add(JLabel("👁 ${Messages.viewMode}").apply {
                 foreground = java.awt.Color(0, 120, 215)
-                toolTipText = Messages.viewMode
             })
-            toolbar.add(Box.createHorizontalStrut(8))
             
             // 缩放按钮
             toolbar.add(JButton("+").apply {
                 toolTipText = Messages.zoomIn
-                preferredSize = java.awt.Dimension(32, 24)
                 addActionListener { zoomIn() }
             })
             toolbar.add(JButton("−").apply {
                 toolTipText = Messages.zoomOut
-                preferredSize = java.awt.Dimension(32, 24)
                 addActionListener { zoomOut() }
             })
             toolbar.add(JButton("▢").apply {
                 toolTipText = Messages.fitToScreen
-                preferredSize = java.awt.Dimension(32, 24)
                 addActionListener { fitToScreen() }
             })
             toolbar.add(JButton("1:1").apply {
                 toolTipText = Messages.zoomReset
-                preferredSize = java.awt.Dimension(36, 24)
                 addActionListener { zoomReset() }
             })
-            
-            toolbar.add(Box.createHorizontalStrut(8))
-            toolbar.add(JSeparator(JSeparator.VERTICAL).apply {
-                maximumSize = java.awt.Dimension(2, 24)
-            })
-            toolbar.add(Box.createHorizontalStrut(8))
             
             // 编辑/导出按钮
             toolbar.add(JButton("✏️ ${Messages.editMode}").apply {
                 toolTipText = Messages.switchToEditMode
                 addActionListener { switchToEditMode() }
             })
-            toolbar.add(Box.createHorizontalStrut(4))
-            toolbar.add(JButton("\ud83c\udf10").apply {
+            toolbar.add(JButton("🌐").apply {
                 toolTipText = Messages.openInBrowserTip
-                preferredSize = java.awt.Dimension(36, 24)
                 addActionListener { openInExternalBrowser() }
             })
-            toolbar.add(JButton("\u21bb").apply {
+            toolbar.add(JButton("↻").apply {
                 toolTipText = Messages.syncFromBrowserTip
-                preferredSize = java.awt.Dimension(32, 24)
                 addActionListener { syncFromBrowser() }
             })
-            toolbar.add(Box.createHorizontalStrut(4))
             toolbar.add(JButton("PNG").apply {
                 toolTipText = "${Messages.export} PNG"
                 addActionListener { exportAsPng() }
@@ -444,61 +427,44 @@ class DrawioJcefEditor(
                 addActionListener { exportAsSvg() }
             })
             
-            toolbar.add(Box.createHorizontalGlue())
             // 提示
-            toolbar.add(JLabel("\ud83d\udccc ${Messages.clickNodeToJump}").apply {
+            toolbar.add(JLabel("📌 ${Messages.clickNodeToJump}").apply {
                 foreground = java.awt.Color(100, 100, 100)
                 font = font.deriveFont(11f)
             })
         } else {
             // 编辑模式：完整工具栏
-            // 折叠/展开书签列表按钮
-            val toggleBtn = JButton(Messages.collapseBookmarks).apply {
+            toolbar.add(JButton(Messages.collapseBookmarks).apply {
                 toolTipText = Messages.toggleBookmarksTip
                 addActionListener {
                     toggleBookmarkPanel()
                     text = if (bookmarkPanelVisible) Messages.collapseBookmarks else Messages.expandBookmarks
                 }
-            }
-            toolbar.add(toggleBtn)
-            toolbar.add(Box.createHorizontalStrut(16))
-            toolbar.add(JSeparator(JSeparator.VERTICAL).apply {
-                maximumSize = java.awt.Dimension(2, 24)
             })
-            toolbar.add(Box.createHorizontalStrut(16))
             
             toolbar.add(JButton(Messages.save).apply {
                 addActionListener { saveDiagram() }
             })
-            toolbar.add(Box.createHorizontalStrut(8))
             toolbar.add(JButton(Messages.saveAndView).apply {
                 toolTipText = Messages.saveAndViewTip
                 addActionListener { saveAndSwitchToViewMode() }
             })
-            toolbar.add(Box.createHorizontalStrut(8))
             toolbar.add(JButton("${Messages.export} PNG").apply {
                 addActionListener { exportAsPng() }
             })
-            toolbar.add(Box.createHorizontalStrut(8))
             toolbar.add(JButton("${Messages.export} SVG").apply {
                 addActionListener { exportAsSvg() }
             })
-            toolbar.add(Box.createHorizontalStrut(16))
-            toolbar.add(JSeparator(JSeparator.VERTICAL).apply {
-                maximumSize = java.awt.Dimension(2, 24)
-            })
-            toolbar.add(Box.createHorizontalStrut(16))
+            
             toolbar.add(JLabel("📌 ${Messages.clickNodeToJump}").apply {
                 foreground = java.awt.Color(0, 120, 215)
             })
-            toolbar.add(Box.createHorizontalGlue())
-            // 在浏览器中打开
+            
+            // 浏览器编辑
             toolbar.add(JButton("🌐 ${Messages.openInBrowser}").apply {
                 toolTipText = Messages.openInBrowserTip
                 addActionListener { openInExternalBrowser() }
             })
-            toolbar.add(Box.createHorizontalStrut(4))
-            // 从浏览器同步
             toolbar.add(JButton("↻ ${Messages.syncFromBrowser}").apply {
                 toolTipText = Messages.syncFromBrowserTip
                 addActionListener { syncFromBrowser() }
@@ -1821,5 +1787,63 @@ class DrawioJcefEditor(
         // dispose 是在关闭后调用的，不需要弹窗
         // 关闭前的保存提示由 DiagramEditorManagerListener 处理
         browser.dispose()
+    }
+}
+
+/**
+ * 自定义的自动换行布局管理器
+ * 当容器宽度不够时自动将组件换到下一行
+ */
+class WrapLayout(align: Int = java.awt.FlowLayout.LEFT, hgap: Int = 5, vgap: Int = 5) : java.awt.FlowLayout(align, hgap, vgap) {
+    
+    override fun preferredLayoutSize(target: java.awt.Container): java.awt.Dimension {
+        return layoutSize(target, true)
+    }
+    
+    override fun minimumLayoutSize(target: java.awt.Container): java.awt.Dimension {
+        val minimum = layoutSize(target, false)
+        minimum.width -= (hgap + 1)
+        return minimum
+    }
+    
+    private fun layoutSize(target: java.awt.Container, preferred: Boolean): java.awt.Dimension {
+        synchronized(target.treeLock) {
+            val targetWidth = target.width
+            val insets = target.insets
+            val horizontalInsetsAndGap = insets.left + insets.right + (hgap * 2)
+            val maxWidth = if (targetWidth > 0) targetWidth - horizontalInsetsAndGap else Int.MAX_VALUE
+            
+            val dim = java.awt.Dimension(0, 0)
+            var rowWidth = 0
+            var rowHeight = 0
+            
+            for (i in 0 until target.componentCount) {
+                val m = target.getComponent(i)
+                if (m.isVisible) {
+                    val d = if (preferred) m.preferredSize else m.minimumSize
+                    
+                    if (rowWidth + d.width > maxWidth) {
+                        // 换行
+                        dim.width = maxOf(dim.width, rowWidth)
+                        dim.height += rowHeight + vgap
+                        rowWidth = 0
+                        rowHeight = 0
+                    }
+                    
+                    if (rowWidth != 0) {
+                        rowWidth += hgap
+                    }
+                    rowWidth += d.width
+                    rowHeight = maxOf(rowHeight, d.height)
+                }
+            }
+            
+            dim.width = maxOf(dim.width, rowWidth)
+            dim.height += rowHeight
+            dim.width += horizontalInsetsAndGap
+            dim.height += insets.top + insets.bottom + vgap * 2
+            
+            return dim
+        }
     }
 }
