@@ -92,7 +92,7 @@ class FileChangeListener(private val project: Project) : BulkFileListener {
     private fun getRelativePath(file: VirtualFile): String {
         val basePath = project.basePath ?: return file.path
         return if (file.path.startsWith(basePath)) {
-            file.path.substring(basePath.length + 1)
+            file.path.removePrefix(basePath).removePrefix("/")
         } else {
             file.path
         }
