@@ -39,6 +39,9 @@ import org.cef.handler.CefLifeSpanHandlerAdapter
 import org.cef.network.CefRequest
 import org.cef.callback.CefCallback
 import org.cef.misc.BoolRef
+import com.intellij.ide.BrowserUtil
+import java.io.File
+import java.nio.file.Files
 
 /**
  * 基于 jCEF 的 Draw.io 编辑器
@@ -377,44 +380,75 @@ class DrawioJcefEditor(
     private fun createToolbar(): JPanel {
         val toolbar = JPanel()
         toolbar.layout = BoxLayout(toolbar, BoxLayout.X_AXIS)
+        toolbar.border = BorderFactory.createEmptyBorder(2, 4, 2, 4)
         
         if (viewOnly) {
-            // 查看模式：简化工具栏
-            toolbar.add(JLabel("👁 ${Messages.viewMode}").apply {
+            // 查看模式：简洁工具栏
+            toolbar.add(JLabel("👁").apply {
                 foreground = java.awt.Color(0, 120, 215)
-                font = font.deriveFont(java.awt.Font.BOLD)
+                toolTipText = Messages.viewMode
             })
-            toolbar.add(Box.createHorizontalStrut(16))
+            toolbar.add(Box.createHorizontalStrut(8))
+            
+            // 缩放按钮
+            toolbar.add(JButton("+").apply {
+                toolTipText = Messages.zoomIn
+                preferredSize = java.awt.Dimension(32, 24)
+                addActionListener { zoomIn() }
+            })
+            toolbar.add(JButton("−").apply {
+                toolTipText = Messages.zoomOut
+                preferredSize = java.awt.Dimension(32, 24)
+                addActionListener { zoomOut() }
+            })
+            toolbar.add(JButton("▢").apply {
+                toolTipText = Messages.fitToScreen
+                preferredSize = java.awt.Dimension(32, 24)
+                addActionListener { fitToScreen() }
+            })
+            toolbar.add(JButton("1:1").apply {
+                toolTipText = Messages.zoomReset
+                preferredSize = java.awt.Dimension(36, 24)
+                addActionListener { zoomReset() }
+            })
+            
+            toolbar.add(Box.createHorizontalStrut(8))
             toolbar.add(JSeparator(JSeparator.VERTICAL).apply {
                 maximumSize = java.awt.Dimension(2, 24)
             })
-            toolbar.add(Box.createHorizontalStrut(16))
-            toolbar.add(JLabel("📌 ${Messages.clickNodeToJump}").apply {
-                foreground = java.awt.Color(0, 120, 215)
-            })
-            toolbar.add(Box.createHorizontalStrut(16))
-            toolbar.add(JSeparator(JSeparator.VERTICAL).apply {
-                maximumSize = java.awt.Dimension(2, 24)
-            })
-            toolbar.add(Box.createHorizontalStrut(16))
-            // 分栏提示
-            toolbar.add(JLabel("💡 ${Messages.splitViewTip}").apply {
-                foreground = java.awt.Color(100, 100, 100)
-                font = font.deriveFont(java.awt.Font.ITALIC, 11f)
-            })
-            toolbar.add(Box.createHorizontalGlue())
-            // 返回编辑按钮
+            toolbar.add(Box.createHorizontalStrut(8))
+            
+            // 编辑/导出按钮
             toolbar.add(JButton("✏️ ${Messages.editMode}").apply {
                 toolTipText = Messages.switchToEditMode
                 addActionListener { switchToEditMode() }
             })
-            toolbar.add(Box.createHorizontalStrut(8))
-            toolbar.add(JButton("${Messages.export} PNG").apply {
+            toolbar.add(Box.createHorizontalStrut(4))
+            toolbar.add(JButton("\ud83c\udf10").apply {
+                toolTipText = Messages.openInBrowserTip
+                preferredSize = java.awt.Dimension(36, 24)
+                addActionListener { openInExternalBrowser() }
+            })
+            toolbar.add(JButton("\u21bb").apply {
+                toolTipText = Messages.syncFromBrowserTip
+                preferredSize = java.awt.Dimension(32, 24)
+                addActionListener { syncFromBrowser() }
+            })
+            toolbar.add(Box.createHorizontalStrut(4))
+            toolbar.add(JButton("PNG").apply {
+                toolTipText = "${Messages.export} PNG"
                 addActionListener { exportAsPng() }
             })
-            toolbar.add(Box.createHorizontalStrut(8))
-            toolbar.add(JButton("${Messages.export} SVG").apply {
+            toolbar.add(JButton("SVG").apply {
+                toolTipText = "${Messages.export} SVG"
                 addActionListener { exportAsSvg() }
+            })
+            
+            toolbar.add(Box.createHorizontalGlue())
+            // 提示
+            toolbar.add(JLabel("\ud83d\udccc ${Messages.clickNodeToJump}").apply {
+                foreground = java.awt.Color(100, 100, 100)
+                font = font.deriveFont(11f)
             })
         } else {
             // 编辑模式：完整工具栏
@@ -456,6 +490,18 @@ class DrawioJcefEditor(
             toolbar.add(Box.createHorizontalStrut(16))
             toolbar.add(JLabel("📌 ${Messages.clickNodeToJump}").apply {
                 foreground = java.awt.Color(0, 120, 215)
+            })
+            toolbar.add(Box.createHorizontalGlue())
+            // 在浏览器中打开
+            toolbar.add(JButton("🌐 ${Messages.openInBrowser}").apply {
+                toolTipText = Messages.openInBrowserTip
+                addActionListener { openInExternalBrowser() }
+            })
+            toolbar.add(Box.createHorizontalStrut(4))
+            // 从浏览器同步
+            toolbar.add(JButton("↻ ${Messages.syncFromBrowser}").apply {
+                toolTipText = Messages.syncFromBrowserTip
+                addActionListener { syncFromBrowser() }
             })
         }
         
@@ -714,13 +760,16 @@ class DrawioJcefEditor(
      * 在查看模式下使用 viewer 参数禁用编辑
      */
     private fun generateDrawioHtml(): String {
+        // 根据插件语言设置 Draw.io 语言
+        val drawioLang = if (Messages.isEnglish()) "en" else "zh"
+        
         // 查看模式使用不同的 URL 参数
         val drawioUrl = if (viewOnly) {
             // 查看模式：禁用编辑，启用链接点击
-            "https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&lang=zh&configure=1&chrome=0&toolbar=0&edit=0"
+            "https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&lang=$drawioLang&configure=1&chrome=0&toolbar=0&edit=0"
         } else {
             // 编辑模式：完整编辑功能
-            "https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&saveAndExit=1&noSaveBtn=1&lang=zh&configure=1"
+            "https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&saveAndExit=1&noSaveBtn=1&lang=$drawioLang&configure=1"
         }
         val modeLabel = if (viewOnly) "查看模式" else "编辑模式"
         
@@ -737,7 +786,7 @@ class DrawioJcefEditor(
 </head>
 <body>
     <div id="status" style="position: absolute; top: 10px; left: 10px; background: #333; color: #fff; padding: 5px 10px; border-radius: 3px; z-index: 9999;">正在加载 Draw.io ($modeLabel)...</div>
-    <iframe id="drawio-frame" src="$drawioUrl"></iframe>
+    <iframe id="drawio-frame" src="$drawioUrl" tabindex="0" allow="clipboard-read; clipboard-write"></iframe>
     
     <script>
         const iframe = document.getElementById('drawio-frame');
@@ -842,30 +891,66 @@ class DrawioJcefEditor(
             }), '*');
         };
         
-        // 监听键盘事件，捕获 Command+S / Ctrl+S
+        // 监听键盘事件
         document.addEventListener('keydown', function(e) {
-            // Check for Ctrl+S or Command+S
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                console.log('💾 Save shortcut detected!');
-                // 发送保存请求到 Java
-                ${jsQuery.inject("JSON.stringify({event: 'saveRequested'})")}
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const modifier = isMac ? e.metaKey : e.ctrlKey;
+            
+            if (modifier) {
+                if (e.key === 's' || e.key === 'S') {
+                    // 保存
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('💾 Save shortcut detected!');
+                    ${jsQuery.inject("JSON.stringify({event: 'saveRequested'})")}
+                } else if (e.key === 'z' || e.key === 'Z') {
+                    // 撤销 - 转发到 Draw.io
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('↩️ Undo shortcut - forwarding to Draw.io');
+                    if (e.shiftKey) {
+                        // Cmd+Shift+Z = Redo
+                        iframe.contentWindow.postMessage(JSON.stringify({action: 'redo'}), '*');
+                    } else {
+                        // Cmd+Z = Undo
+                        iframe.contentWindow.postMessage(JSON.stringify({action: 'undo'}), '*');
+                    }
+                } else if (e.key === 'y' || e.key === 'Y') {
+                    // 重做 - 转发到 Draw.io
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('↪️ Redo shortcut - forwarding to Draw.io');
+                    iframe.contentWindow.postMessage(JSON.stringify({action: 'redo'}), '*');
+                }
             }
+        }, true); // 使用捕获阶段
+        
+        // 鼠标滚轮事件 - 转发到 Draw.io 进行缩放
+        document.addEventListener('wheel', function(e) {
+            // 确保 iframe 有焦点时滚轮能工作
+            if (document.activeElement === iframe || document.activeElement === document.body) {
+                // 将滚轮事件转发到 iframe（通过 postMessage）
+                if (e.ctrlKey || e.metaKey) {
+                    // Ctrl/Cmd + 滚轮 = 缩放
+                    e.preventDefault();
+                    const scale = e.deltaY < 0 ? 1.1 : 0.9;
+                    iframe.contentWindow.postMessage(JSON.stringify({
+                        action: 'zoom',
+                        scale: scale
+                    }), '*');
+                }
+            }
+        }, { passive: false });
+        
+        // 确保 iframe 能获取焦点
+        iframe.addEventListener('load', function() {
+            // 自动聚焦到 iframe
+            setTimeout(() => iframe.focus(), 100);
         });
         
-        // 也监听 iframe 内的键盘事件
-        iframe.addEventListener('load', function() {
-            try {
-                iframe.contentDocument.addEventListener('keydown', function(e) {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                        e.preventDefault();
-                        console.log('💾 Save shortcut in iframe detected!');
-                        ${jsQuery.inject("JSON.stringify({event: 'saveRequested'})")}
-                    }
-                });
-            } catch (err) {
-                console.log('Cannot add keydown listener to iframe:', err);
-            }
+        // 点击时聚焦 iframe
+        document.addEventListener('click', function(e) {
+            iframe.focus();
         });
     </script>
 </body>
@@ -1343,6 +1428,253 @@ class DrawioJcefEditor(
      */
     private fun exportAsSvg() {
         executeJS("window.exportSvg();")
+    }
+    
+    // ===== 缩放功能 =====
+    // Draw.io embed 模式通过 JavaScript 直接调用 graph 对象进行缩放
+    
+    /**
+     * 放大 - 通过执行 Draw.io 内部命令
+     */
+    private fun zoomIn() {
+        // 使用 Draw.io 的 EditorUi action
+        executeJS("""
+            try {
+                // 方法1: 通过 postMessage 发送 spinner action（触发内部刷新）
+                // 方法2: 直接模拟键盘快捷键 Ctrl/Cmd + 加号
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    action: 'spinner',
+                    message: 'Zooming...',
+                    show: false
+                }), '*');
+                // 发送放大命令
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    action: 'prompt',
+                    msg: 'zoomIn'
+                }), '*');
+            } catch(e) { console.log('zoomIn error:', e); }
+        """.trimIndent())
+        // 备用方案：模拟滚轮缩放
+        executeJS("""
+            const scale = 1.25;
+            iframe.contentWindow.postMessage(JSON.stringify({action: 'zoom', scale: scale}), '*');
+        """.trimIndent())
+    }
+    
+    /**
+     * 缩小
+     */
+    private fun zoomOut() {
+        executeJS("""
+            const scale = 0.8;
+            iframe.contentWindow.postMessage(JSON.stringify({action: 'zoom', scale: scale}), '*');
+        """.trimIndent())
+    }
+    
+    /**
+     * 适应屏幕
+     */
+    private fun fitToScreen() {
+        // Draw.io 的 fit action
+        executeJS("""
+            iframe.contentWindow.postMessage(JSON.stringify({
+                action: 'layout',
+                layoutId: 'fit'
+            }), '*');
+        """.trimIndent())
+    }
+    
+    /**
+     * 重置缩放到 100%
+     */
+    private fun zoomReset() {
+        executeJS("""
+            iframe.contentWindow.postMessage(JSON.stringify({
+                action: 'zoom',
+                scale: 1.0,
+                center: true
+            }), '*');
+        """.trimIndent())
+    }
+    
+    // ===== 浏览器编辑功能 =====
+    
+    /**
+     * 在外部浏览器中打开编辑
+     * 将图表保存为临时 .drawio 文件，用户可以直接用 draw.io 桌面版或网页版打开
+     */
+    private fun openInExternalBrowser() {
+        try {
+            // 获取当前图表的 XML
+            val xml = currentCanvasXml ?: diagram.metadata["drawioXml"] as? String
+            
+            if (xml.isNullOrBlank()) {
+                // 如果没有内容，直接打开空白编辑器
+                BrowserUtil.browse("https://app.diagrams.net/")
+                return
+            }
+            
+            // 将 XML 保存到临时 .drawio 文件
+            val tempDir = File(System.getProperty("java.io.tmpdir"), "drawio_bookmark")
+            tempDir.mkdirs()
+            val tempFile = File(tempDir, "${diagram.name.replace(Regex("[^a-zA-Z0-9_\\-\\u4e00-\\u9fa5]"), "_")}.drawio")
+            
+            // 写入完整的 drawio 格式（包装为 mxfile）
+            val drawioContent = if (xml.contains("<mxfile")) {
+                xml
+            } else {
+                """<mxfile host="app.diagrams.net" modified="${java.time.Instant.now()}" agent="BookmarkPalace" version="1.0">
+                    <diagram name="Page-1" id="page1">$xml</diagram>
+                </mxfile>""".trimIndent()
+            }
+            tempFile.writeText(drawioContent)
+            
+            logger.info("📁 Saved diagram to: ${tempFile.absolutePath}")
+            
+            // 显示选项对话框
+            ApplicationManager.getApplication().invokeLater {
+                val options = if (Messages.isEnglish()) {
+                    arrayOf("Open draw.io website", "Show file location", "Cancel")
+                } else {
+                    arrayOf("打开 draw.io 网站", "显示文件位置", "取消")
+                }
+                
+                val choice = JOptionPane.showOptionDialog(
+                    mainPanel,
+                    if (Messages.isEnglish())
+                        "Diagram saved to:\n${tempFile.absolutePath}\n\n" +
+                        "You can:\n" +
+                        "1. Open draw.io website and drag the file into it\n" +
+                        "2. Open the file with draw.io desktop app\n\n" +
+                        "After editing, save the file. Then return to IDE and\n" +
+                        "click the sync button or drag the file back."
+                    else
+                        "导览图已保存到：\n${tempFile.absolutePath}\n\n" +
+                        "您可以：\n" +
+                        "1. 打开 draw.io 网站，将文件拖入\n" +
+                        "2. 用 draw.io 桌面版打开此文件\n\n" +
+                        "编辑完成后保存文件，然后返回 IDE\n" +
+                        "点击同步按钮或将文件拖回。",
+                    Messages.openInBrowser,
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+                )
+                
+                when (choice) {
+                    0 -> BrowserUtil.browse("https://app.diagrams.net/")
+                    1 -> {
+                        // 打开文件所在目录
+                        java.awt.Desktop.getDesktop().open(tempDir)
+                    }
+                }
+            }
+            
+        } catch (e: Exception) {
+            logger.error("Failed to open in browser", e)
+            JOptionPane.showMessageDialog(
+                mainPanel,
+                "打开失败: ${e.message}",
+                "错误",
+                JOptionPane.ERROR_MESSAGE
+            )
+        }
+    }
+    
+    /**
+     * 从文件同步浏览器编辑的内容
+     * 优先从临时文件读取，如果没有则从剪贴板读取
+     */
+    private fun syncFromBrowser() {
+        try {
+            // 尝试从临时文件读取
+            val tempDir = File(System.getProperty("java.io.tmpdir"), "drawio_bookmark")
+            val tempFile = File(tempDir, "${diagram.name.replace(Regex("[^a-zA-Z0-9_\\-\\u4e00-\\u9fa5]"), "_")}.drawio")
+            
+            var xmlData: String? = null
+            var source = ""
+            
+            if (tempFile.exists()) {
+                val content = tempFile.readText()
+                if (content.contains("<mxGraphModel") || content.contains("<mxfile")) {
+                    xmlData = content
+                    source = "file"
+                }
+            }
+            
+            // 如果文件没有有效内容，尝试从剪贴板读取
+            if (xmlData == null) {
+                val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+                val contents = clipboard.getContents(null)
+                if (contents != null && contents.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.stringFlavor)) {
+                    val data = contents.getTransferData(java.awt.datatransfer.DataFlavor.stringFlavor) as String
+                    if (data.contains("<mxGraphModel") || data.contains("<mxfile")) {
+                        xmlData = data
+                        source = "clipboard"
+                    }
+                }
+            }
+            
+            if (xmlData != null) {
+                // 提取 mxGraphModel（从 mxfile 包装中）
+                val graphModel = if (xmlData.contains("<diagram")) {
+                    // 从 mxfile 格式中提取 mxGraphModel
+                    val diagramContent = Regex("<diagram[^>]*>([\\s\\S]*?)</diagram>").find(xmlData)?.groupValues?.get(1)
+                    if (diagramContent != null && diagramContent.contains("<mxGraphModel")) {
+                        diagramContent
+                    } else {
+                        xmlData
+                    }
+                } else {
+                    xmlData
+                }
+                
+                // 更新缓存和图表
+                currentCanvasXml = graphModel
+                diagram.metadata["drawioXml"] = graphModel
+                diagramService.updateDiagram(diagram)
+                
+                // 重新加载到编辑器
+                val escapedXml = escapeJS(graphModel)
+                executeJS("window.loadDiagram('$escapedXml');")
+                
+                val msg = if (Messages.isEnglish()) "Synced from $source" else "已从${if (source == "file") "文件" else "剪贴板"}同步"
+                executeJS("""
+                    status.textContent = '✅ $msg';
+                    status.style.display = 'block';
+                    status.style.background = '#4caf50';
+                    setTimeout(() => status.style.display = 'none', 3000);
+                """.trimIndent())
+                
+                logger.info("✅ Synced diagram from $source")
+            } else {
+                JOptionPane.showMessageDialog(
+                    mainPanel,
+                    if (Messages.isEnglish())
+                        "No valid diagram found.\n\n" +
+                        "Please make sure you have:\n" +
+                        "1. Saved the file in draw.io, or\n" +
+                        "2. Copied the diagram to clipboard"
+                    else
+                        "未找到有效的图表内容。\n\n" +
+                        "请确保您已经：\n" +
+                        "1. 在 draw.io 中保存了文件，或\n" +
+                        "2. 将图表复制到剪贴板",
+                    if (Messages.isEnglish()) "Sync" else "同步",
+                    JOptionPane.INFORMATION_MESSAGE
+                )
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to sync from browser", e)
+            JOptionPane.showMessageDialog(
+                mainPanel,
+                "同步失败: ${e.message}",
+                "错误",
+                JOptionPane.ERROR_MESSAGE
+            )
+        }
     }
 
     /**

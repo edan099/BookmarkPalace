@@ -202,4 +202,12 @@ object Messages {
     val viewOnlyTip get() = get("仅查看模式（不可编辑，点击节点跳转代码）", "View only mode (not editable, click node to jump to code)")
     val openInEditorTip get() = get("在编辑器中打开（支持分栏，可边看图边看代码）", "Open in editor (supports split view)")
     val openInWindowTip get() = get("在弹窗中打开编辑", "Open in popup window")
+    
+    // ===== 浏览器编辑 =====
+    val openInBrowser get() = get("在浏览器中打开", "Open in Browser")
+    val openInBrowserTip get() = get("在外部浏览器中编辑（保存后自动同步回IDE）", "Edit in external browser (auto sync on save)")
+    val syncFromBrowser get() = get("从浏览器同步", "Sync from Browser")
+    val syncFromBrowserTip get() = get("从浏览器导入最新编辑内容", "Import latest edits from browser")
+    val browserEditMode get() = get("🌐 浏览器编辑中", "🌐 Editing in Browser")
+    val clickToSync get() = get("点击下方按钮导入浏览器中的编辑", "Click button below to import browser edits")
 }
