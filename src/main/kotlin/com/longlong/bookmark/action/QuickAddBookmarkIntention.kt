@@ -7,16 +7,15 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.service.BookmarkService
-import com.longlong.bookmark.ui.dialog.AddBookmarkDialog
 
 /**
- * Alt+Enter 菜单中的添加书签意图动作（带对话框）
+ * Alt+Enter 菜单中的快速添加书签意图动作（无对话框）
  */
-class AddBookmarkIntention : PsiElementBaseIntentionAction(), IntentionAction {
+class QuickAddBookmarkIntention : PsiElementBaseIntentionAction(), IntentionAction {
     
     override fun getFamilyName(): String = "BookmarkPalace"
     
-    override fun getText(): String = "📝 ${Messages.addBookmark}..."
+    override fun getText(): String = "⚡ ${Messages.quickAdd}"
     
     override fun isAvailable(project: Project, editor: Editor?, element: PsiElement): Boolean {
         // 在任何可编辑的文件中都可用
@@ -26,18 +25,16 @@ class AddBookmarkIntention : PsiElementBaseIntentionAction(), IntentionAction {
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
         if (editor == null) return
         
-        // 打开添加书签对话框
-        val dialog = AddBookmarkDialog(project, editor)
-        if (dialog.showAndGet()) {
-            // 用户点击确认后，添加书签
-            val bookmarkService = BookmarkService.getInstance(project)
-            bookmarkService.addBookmark(
-                editor = editor,
-                alias = dialog.getAlias(),
-                color = dialog.getColor(),
-                tags = dialog.getTags(),
-                comment = dialog.getComment()
-            )
+        val bookmarkService = BookmarkService.getInstance(project)
+        val line = editor.caretModel.logicalPosition.line
+        val existingBookmark = bookmarkService.getBookmarkAt(editor, line)
+        
+        if (existingBookmark != null) {
+            // 如果已有书签，则删除
+            bookmarkService.removeBookmark(existingBookmark.id)
+        } else {
+            // 添加新书签
+            bookmarkService.quickAddBookmark(editor)
         }
     }
     

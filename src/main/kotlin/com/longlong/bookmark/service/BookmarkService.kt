@@ -1,5 +1,6 @@
 package com.longlong.bookmark.service
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
@@ -12,6 +13,7 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiManager
 import com.longlong.bookmark.model.*
 import com.longlong.bookmark.storage.BookmarkStorage
 import java.util.concurrent.ConcurrentHashMap
@@ -433,18 +435,46 @@ class BookmarkService(private val project: Project) {
 
     private fun notifyBookmarkAdded(bookmark: Bookmark) {
         listeners.forEach { it.onBookmarkAdded(bookmark) }
+        refreshGutterIcons(bookmark.filePath)
     }
 
     private fun notifyBookmarkRemoved(bookmark: Bookmark) {
         listeners.forEach { it.onBookmarkRemoved(bookmark) }
+        refreshGutterIcons(bookmark.filePath)
     }
 
     private fun notifyBookmarkUpdated(bookmark: Bookmark) {
         listeners.forEach { it.onBookmarkUpdated(bookmark) }
+        refreshGutterIcons(bookmark.filePath)
     }
 
     private fun notifyBookmarksRefreshed() {
         listeners.forEach { it.onBookmarksRefreshed() }
+        refreshAllGutterIcons()
+    }
+
+    /**
+     * 刷新指定文件的 Gutter 图标
+     */
+    private fun refreshGutterIcons(filePath: String) {
+        val virtualFile = findVirtualFile(filePath) ?: return
+        ApplicationManager.getApplication().invokeLater {
+            val psiFile = PsiManager.getInstance(project).findFile(virtualFile) ?: return@invokeLater
+            DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+        }
+    }
+
+    /**
+     * 刷新所有打开文件的 Gutter 图标
+     */
+    private fun refreshAllGutterIcons() {
+        ApplicationManager.getApplication().invokeLater {
+            val openFiles = FileEditorManager.getInstance(project).openFiles
+            openFiles.forEach { virtualFile ->
+                val psiFile = PsiManager.getInstance(project).findFile(virtualFile) ?: return@forEach
+                DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+            }
+        }
     }
 
     companion object {
