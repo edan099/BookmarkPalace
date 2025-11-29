@@ -203,11 +203,11 @@ object Messages {
     val openInEditorTip get() = get("在编辑器中打开（支持分栏，可边看图边看代码）", "Open in editor (supports split view)")
     val openInWindowTip get() = get("在弹窗中打开编辑", "Open in popup window")
     
-    // ===== 浏览器编辑 =====
-    val openInBrowser get() = get("在浏览器中打开", "Open in Browser")
-    val openInBrowserTip get() = get("在外部浏览器中编辑（保存后自动同步回IDE）", "Edit in external browser (auto sync on save)")
-    val syncFromBrowser get() = get("从浏览器同步", "Sync from Browser")
-    val syncFromBrowserTip get() = get("从浏览器导入最新编辑内容", "Import latest edits from browser")
+    // ===== 外部编辑 =====
+    val openInBrowser get() = get("用桌面版或浏览器打开", "Open with Desktop/Browser")
+    val openInBrowserTip get() = get("用 Draw.io 桌面版或浏览器编辑（推荐桌面版，速度快）", "Edit with Draw.io Desktop or Browser (Desktop recommended)")
+    val syncFromBrowser get() = get("同步外部编辑", "Sync External Edits")
+    val syncFromBrowserTip get() = get("从桌面版或浏览器导入最新编辑内容", "Import latest edits from Desktop/Browser")
     val browserEditMode get() = get("🌐 浏览器编辑中", "🌐 Editing in Browser")
     val clickToSync get() = get("点击下方按钮导入浏览器中的编辑", "Click button below to import browser edits")
 }

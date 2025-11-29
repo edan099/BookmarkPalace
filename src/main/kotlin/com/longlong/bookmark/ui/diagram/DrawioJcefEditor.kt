@@ -1500,27 +1500,29 @@ class DrawioJcefEditor(
             // 显示选项对话框
             ApplicationManager.getApplication().invokeLater {
                 val options = if (Messages.isEnglish()) {
-                    arrayOf("Open draw.io website", "Show file location", "Cancel")
+                    arrayOf("Open with Desktop App", "Open draw.io website", "Show file location", "Cancel")
                 } else {
-                    arrayOf("打开 draw.io 网站", "显示文件位置", "取消")
+                    arrayOf("用桌面版打开", "打开 draw.io 网站", "显示文件位置", "取消")
                 }
                 
                 val choice = JOptionPane.showOptionDialog(
                     mainPanel,
                     if (Messages.isEnglish())
                         "Diagram saved to:\n${tempFile.absolutePath}\n\n" +
-                        "You can:\n" +
-                        "1. Open draw.io website and drag the file into it\n" +
-                        "2. Open the file with draw.io desktop app\n\n" +
+                        "Options:\n" +
+                        "1. Open with Draw.io Desktop (recommended, faster)\n" +
+                        "2. Open draw.io website and drag the file into it\n" +
+                        "3. Show file in Finder/Explorer\n\n" +
                         "After editing, save the file. Then return to IDE and\n" +
-                        "click the sync button or drag the file back."
+                        "click ↻ sync button to import changes."
                     else
                         "导览图已保存到：\n${tempFile.absolutePath}\n\n" +
-                        "您可以：\n" +
-                        "1. 打开 draw.io 网站，将文件拖入\n" +
-                        "2. 用 draw.io 桌面版打开此文件\n\n" +
+                        "选项：\n" +
+                        "1. 用 Draw.io 桌面版打开（推荐，速度快）\n" +
+                        "2. 打开 draw.io 网站，将文件拖入\n" +
+                        "3. 在 Finder 中显示文件\n\n" +
                         "编辑完成后保存文件，然后返回 IDE\n" +
-                        "点击同步按钮或将文件拖回。",
+                        "点击 ↻ 同步按钮导入更改。",
                     Messages.openInBrowser,
                     JOptionPane.DEFAULT_OPTION,
                     JOptionPane.INFORMATION_MESSAGE,
@@ -1530,8 +1532,31 @@ class DrawioJcefEditor(
                 )
                 
                 when (choice) {
-                    0 -> BrowserUtil.browse("https://app.diagrams.net/")
-                    1 -> {
+                    0 -> {
+                        // 用系统默认应用打开（Draw.io 桌面版）
+                        try {
+                            java.awt.Desktop.getDesktop().open(tempFile)
+                        } catch (e: Exception) {
+                            // 如果没有关联应用，提示用户
+                            JOptionPane.showMessageDialog(
+                                mainPanel,
+                                if (Messages.isEnglish())
+                                    "Cannot open .drawio file.\n\n" +
+                                    "Please install Draw.io Desktop from:\n" +
+                                    "https://github.com/jgraph/drawio-desktop/releases\n\n" +
+                                    "Or open the file manually from:\n${tempFile.absolutePath}"
+                                else
+                                    "无法打开 .drawio 文件。\n\n" +
+                                    "请从以下地址下载安装 Draw.io 桌面版：\n" +
+                                    "https://github.com/jgraph/drawio-desktop/releases\n\n" +
+                                    "或手动打开文件：\n${tempFile.absolutePath}",
+                                if (Messages.isEnglish()) "App Not Found" else "未找到应用",
+                                JOptionPane.WARNING_MESSAGE
+                            )
+                        }
+                    }
+                    1 -> BrowserUtil.browse("https://app.diagrams.net/")
+                    2 -> {
                         // 打开文件所在目录
                         java.awt.Desktop.getDesktop().open(tempDir)
                     }

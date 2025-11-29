@@ -180,26 +180,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
             addSeparator()
 
-            add(object : AnAction(Messages.export, Messages.export, BookmarkPalaceIcons.Export) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    ExportDialog(project).show()
-                }
-                override fun update(e: AnActionEvent) {
-                    e.presentation.text = Messages.export
-                }
-            })
-
-            add(object : AnAction(Messages.import, Messages.import, BookmarkPalaceIcons.Import) {
-                override fun actionPerformed(e: AnActionEvent) {
-                    ImportDialog(project).show()
-                }
-                override fun update(e: AnActionEvent) {
-                    e.presentation.text = Messages.import
-                }
-            })
-
-            addSeparator()
-
+            // 导览图
             add(object : AnAction(Messages.diagram, Messages.openDiagram, BookmarkPalaceIcons.Diagram) {
                 override fun actionPerformed(e: AnActionEvent) {
                     DiagramEditorProvider.openDiagramSelector(project)
@@ -209,8 +190,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
                 }
             })
 
-            addSeparator()
-
+            // 语言切换
             add(object : AnAction(Messages.switchLanguage, "切换语言", BookmarkPalaceIcons.Language) {
                 override fun actionPerformed(e: AnActionEvent) {
                     Messages.toggleLanguage()
@@ -218,6 +198,28 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
                 }
                 override fun update(e: AnActionEvent) {
                     e.presentation.text = Messages.switchLanguage
+                }
+            })
+
+            addSeparator()
+
+            // 导出
+            add(object : AnAction(Messages.export, Messages.export, BookmarkPalaceIcons.Export) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    ExportDialog(project).show()
+                }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.export
+                }
+            })
+
+            // 导入
+            add(object : AnAction(Messages.import, Messages.import, BookmarkPalaceIcons.Import) {
+                override fun actionPerformed(e: AnActionEvent) {
+                    ImportDialog(project).show()
+                }
+                override fun update(e: AnActionEvent) {
+                    e.presentation.text = Messages.import
                 }
             })
 
