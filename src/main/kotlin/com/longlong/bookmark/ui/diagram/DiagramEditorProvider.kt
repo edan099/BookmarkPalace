@@ -57,7 +57,7 @@ object DiagramEditorProvider {
         val diagrams = diagramService.getAllDiagrams()
 
         if (diagrams.isEmpty()) {
-            val newDiagram = diagramService.createDiagram("主流程", DiagramType.MAIN_FLOW)
+            val newDiagram = diagramService.createDiagram(Messages.defaultMainFlowName, DiagramType.MAIN_FLOW)
             diagramService.addBookmarkToDiagram(newDiagram.id, bookmark)
             return
         }
@@ -96,7 +96,6 @@ object DiagramEditorProvider {
             val diagramService = DiagramService.getInstance(project)
             return diagramService.createDiagram(
                 name = dialog.getDiagramName(),
-                type = dialog.getDiagramType(),
                 description = dialog.getDescription()
             )
         }
@@ -159,7 +158,7 @@ class DiagramSelectorDialog(private val project: Project) : DialogWrapper(projec
             addActionListener {
                 val dialog = CreateDiagramDialog(project)
                 if (dialog.showAndGet()) {
-                    diagramService.createDiagram(dialog.getDiagramName(), dialog.getDiagramType(), dialog.getDescription())
+                    diagramService.createDiagram(dialog.getDiagramName(), description = dialog.getDescription())
                     refreshList()
                 }
             }
@@ -238,24 +237,15 @@ class DiagramSelectorDialog(private val project: Project) : DialogWrapper(projec
 }
 
 /**
- * 创建导览图对话框
+ * 创建导览图对话框（简化版，去掉类型选择）
  */
 class CreateDiagramDialog(project: Project) : DialogWrapper(project) {
 
     private val nameField = JTextField(20)
-    private val typeCombo = JComboBox(DiagramType.values())
     private val descField = JTextField(30)
 
     init {
         title = Messages.newDiagram
-        typeCombo.renderer = object : DefaultListCellRenderer() {
-            override fun getListCellRendererComponent(list: JList<*>?, value: Any?, index: Int,
-                isSelected: Boolean, cellHasFocus: Boolean): java.awt.Component {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                (value as? DiagramType)?.let { text = it.displayName }
-                return this
-            }
-        }
         init()
     }
 
@@ -269,20 +259,14 @@ class CreateDiagramDialog(project: Project) : DialogWrapper(project) {
         })
         panel.add(Box.createVerticalStrut(10))
         panel.add(JPanel(BorderLayout()).apply {
-            add(JLabel("${Messages.type}: "), BorderLayout.WEST)
-            add(typeCombo, BorderLayout.CENTER)
-        })
-        panel.add(Box.createVerticalStrut(10))
-        panel.add(JPanel(BorderLayout()).apply {
             add(JLabel("${Messages.comment}: "), BorderLayout.WEST)
             add(descField, BorderLayout.CENTER)
         })
 
-        panel.preferredSize = Dimension(400, 120)
+        panel.preferredSize = Dimension(400, 80)
         return panel
     }
 
     fun getDiagramName(): String = nameField.text.trim().ifEmpty { Messages.newDiagram }
-    fun getDiagramType(): DiagramType = typeCombo.selectedItem as DiagramType
     fun getDescription(): String = descField.text.trim()
 }
