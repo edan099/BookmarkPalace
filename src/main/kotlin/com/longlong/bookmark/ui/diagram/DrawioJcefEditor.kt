@@ -430,6 +430,12 @@ class DrawioJcefEditor(
                 }
             })
             
+            // 刷新按钮
+            toolbar.add(JButton("🔄").apply {
+                toolTipText = if (Messages.isEnglish()) "Refresh Draw.io" else "刷新 Draw.io"
+                addActionListener { refreshDrawio() }
+            })
+            
             toolbar.add(JButton(Messages.save).apply {
                 addActionListener { saveDiagram() }
             })
