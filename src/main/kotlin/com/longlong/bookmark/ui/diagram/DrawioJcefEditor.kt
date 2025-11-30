@@ -387,22 +387,10 @@ class DrawioJcefEditor(
                 foreground = java.awt.Color(0, 120, 215)
             })
             
-            // 缩放按钮
-            toolbar.add(JButton("+").apply {
-                toolTipText = Messages.zoomIn
-                addActionListener { zoomIn() }
-            })
-            toolbar.add(JButton("−").apply {
-                toolTipText = Messages.zoomOut
-                addActionListener { zoomOut() }
-            })
-            toolbar.add(JButton("▢").apply {
-                toolTipText = Messages.fitToScreen
-                addActionListener { fitToScreen() }
-            })
-            toolbar.add(JButton("1:1").apply {
-                toolTipText = Messages.zoomReset
-                addActionListener { zoomReset() }
+            // 刷新按钮 - 重新加载 Draw.io
+            toolbar.add(JButton("🔄").apply {
+                toolTipText = if (Messages.isEnglish()) "Refresh Draw.io" else "刷新 Draw.io"
+                addActionListener { refreshDrawio() }
             })
             
             // 编辑/导出按钮
@@ -410,11 +398,11 @@ class DrawioJcefEditor(
                 toolTipText = Messages.switchToEditMode
                 addActionListener { switchToEditMode() }
             })
-            toolbar.add(JButton("🌐").apply {
+            toolbar.add(JButton("🌐 ${if (Messages.isEnglish()) "Open in Browser" else "外部浏览器"}").apply {
                 toolTipText = Messages.openInBrowserTip
                 addActionListener { openInExternalBrowser() }
             })
-            toolbar.add(JButton("↻").apply {
+            toolbar.add(JButton("↻ ${if (Messages.isEnglish()) "Sync" else "同步"}").apply {
                 toolTipText = Messages.syncFromBrowserTip
                 addActionListener { syncFromBrowser() }
             })
@@ -427,8 +415,8 @@ class DrawioJcefEditor(
                 addActionListener { exportAsSvg() }
             })
             
-            // 提示
-            toolbar.add(JLabel("📌 ${Messages.clickNodeToJump}").apply {
+            // 提示：Draw.io 内部支持拖动和缩放
+            toolbar.add(JLabel("📌 ${Messages.clickNodeToJump} | Ctrl+滚轮缩放, 中键拖动").apply {
                 foreground = java.awt.Color(100, 100, 100)
                 font = font.deriveFont(11f)
             })
@@ -731,8 +719,12 @@ class DrawioJcefEditor(
         
         // 查看模式使用不同的 URL 参数
         val drawioUrl = if (viewOnly) {
-            // 查看模式：禁用编辑，启用链接点击
-            "https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&lang=$drawioLang&configure=1&chrome=0&toolbar=0&edit=0"
+            // 查看模式：使用 chromeless + lightbox 实现真正的只读模式
+            // chrome=0 启用 chromeless 只读查看器
+            // lightbox=1 使用 lightbox 模式
+            // nav=1 启用导航（可折叠/展开）
+            // layers=1 启用图层控制
+            "https://embed.diagrams.net/?embed=1&chrome=0&lightbox=1&nav=1&layers=1&spin=1&proto=json&lang=$drawioLang&configure=1"
         } else {
             // 编辑模式：完整编辑功能
             "https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&saveAndExit=1&noSaveBtn=1&lang=$drawioLang&configure=1"
@@ -891,22 +883,13 @@ class DrawioJcefEditor(
             }
         }, true); // 使用捕获阶段
         
-        // 鼠标滚轮事件 - 转发到 Draw.io 进行缩放
+        // 鼠标滚轮事件 - 交给 Draw.io 自己处理缩放与拖动
+        // 这里只是尽量保持 iframe 聚焦，不再拦截 Ctrl/Cmd + 滚轮
         document.addEventListener('wheel', function(e) {
-            // 确保 iframe 有焦点时滚轮能工作
-            if (document.activeElement === iframe || document.activeElement === document.body) {
-                // 将滚轮事件转发到 iframe（通过 postMessage）
-                if (e.ctrlKey || e.metaKey) {
-                    // Ctrl/Cmd + 滚轮 = 缩放
-                    e.preventDefault();
-                    const scale = e.deltaY < 0 ? 1.1 : 0.9;
-                    iframe.contentWindow.postMessage(JSON.stringify({
-                        action: 'zoom',
-                        scale: scale
-                    }), '*');
-                }
+            if (document.activeElement !== iframe) {
+                iframe.focus();
             }
-        }, { passive: false });
+        }, { passive: true });
         
         // 确保 iframe 能获取焦点
         iframe.addEventListener('load', function() {
@@ -1381,6 +1364,18 @@ class DrawioJcefEditor(
             DiagramEditorProvider.openDiagramInEditor(project, diagram, viewOnly = false)
         }
     }
+    
+    /**
+     * 刷新 Draw.io - 重新加载 iframe
+     */
+    private fun refreshDrawio() {
+        // 重新加载浏览器页面
+        browser.cefBrowser.reload()
+        // 延迟后重新加载图表数据
+        javax.swing.Timer(2000) {
+            loadExistingDiagram()
+        }.apply { isRepeats = false; start() }
+    }
 
     /**
      * 导出为 PNG
@@ -1396,114 +1391,8 @@ class DrawioJcefEditor(
         executeJS("window.exportSvg();")
     }
     
-    // ===== 缩放功能 =====
-    // Draw.io embed 模式通过 JavaScript 直接调用 graph 对象进行缩放
-    
-    /**
-     * 放大 - 通过直接操作 iframe 内的 EditorUi 对象
-     */
-    private fun zoomIn() {
-        executeJS("""
-            (function() {
-                try {
-                    const iframeWin = iframe.contentWindow;
-                    // 方法1: 尝试访问 EditorUi
-                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
-                        iframeWin.editorUi.actions.get('zoomIn').funct();
-                        return;
-                    }
-                    // 方法2: 尝试访问 Draw 对象
-                    if (iframeWin.Draw && iframeWin.Draw.loadPlugin) {
-                        // Draw.io 加载完成
-                    }
-                    // 方法3: 通过 graph 对象缩放
-                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
-                    if (graphs.length > 0) {
-                        const container = graphs[0];
-                        const transform = container.style.transform || 'scale(1)';
-                        const match = transform.match(/scale\(([\d.]+)\)/);
-                        let scale = match ? parseFloat(match[1]) : 1;
-                        scale = Math.min(scale * 1.25, 4);
-                        container.style.transform = 'scale(' + scale + ')';
-                        container.style.transformOrigin = 'center center';
-                    }
-                } catch(e) { console.log('放大失败:', e); }
-            })();
-        """.trimIndent())
-    }
-    
-    /**
-     * 缩小
-     */
-    private fun zoomOut() {
-        executeJS("""
-            (function() {
-                try {
-                    const iframeWin = iframe.contentWindow;
-                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
-                        iframeWin.editorUi.actions.get('zoomOut').funct();
-                        return;
-                    }
-                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
-                    if (graphs.length > 0) {
-                        const container = graphs[0];
-                        const transform = container.style.transform || 'scale(1)';
-                        const match = transform.match(/scale\(([\d.]+)\)/);
-                        let scale = match ? parseFloat(match[1]) : 1;
-                        scale = Math.max(scale * 0.8, 0.25);
-                        container.style.transform = 'scale(' + scale + ')';
-                        container.style.transformOrigin = 'center center';
-                    }
-                } catch(e) { console.log('缩小失败:', e); }
-            })();
-        """.trimIndent())
-    }
-    
-    /**
-     * 适应屏幕
-     */
-    private fun fitToScreen() {
-        executeJS("""
-            (function() {
-                try {
-                    const iframeWin = iframe.contentWindow;
-                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
-                        iframeWin.editorUi.actions.get('fit').funct();
-                        return;
-                    }
-                    // 备用: 重置为 100%
-                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
-                    if (graphs.length > 0) {
-                        graphs[0].style.transform = 'scale(1)';
-                    }
-                } catch(e) { console.log('适应屏幕失败:', e); }
-            })();
-        """.trimIndent())
-    }
-    
-    /**
-     * 重置缩放到 100%
-     */
-    private fun zoomReset() {
-        executeJS("""
-            (function() {
-                try {
-                    const iframeWin = iframe.contentWindow;
-                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
-                        iframeWin.editorUi.actions.get('resetView').funct();
-                        return;
-                    }
-                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
-                    if (graphs.length > 0) {
-                        graphs[0].style.transform = 'scale(1)';
-                        graphs[0].style.transformOrigin = 'center center';
-                    }
-                } catch(e) { console.log('重置缩放失败:', e); }
-            })();
-        """.trimIndent())
-    }
-    
     // ===== 浏览器编辑功能 =====
+    // 注意：缩放和拖动功能现在完全由 Draw.io 自己处理（Ctrl+滚轮缩放，中键/右键拖动）
     
     /**
      * 在外部浏览器中打开编辑
