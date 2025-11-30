@@ -2,6 +2,7 @@ package com.longlong.bookmark.service
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.model.*
 import com.longlong.bookmark.storage.BookmarkStorage
 
@@ -247,8 +248,8 @@ class DiagramService(private val project: Project) {
     }
 
     private fun createDefaultDiagrams() {
-        createDiagram("主流程", DiagramType.MAIN_FLOW, "业务主链路导览图")
-        createDiagram("自定义导览", DiagramType.CUSTOM_FLOW, "自定义代码导览图")
+        createDiagram(Messages.defaultMainFlowName, DiagramType.MAIN_FLOW, Messages.defaultMainFlowDesc)
+        createDiagram(Messages.defaultCustomFlowName, DiagramType.CUSTOM_FLOW, Messages.defaultCustomFlowDesc)
     }
 
     private fun notifyDiagramAdded(diagram: Diagram) {
