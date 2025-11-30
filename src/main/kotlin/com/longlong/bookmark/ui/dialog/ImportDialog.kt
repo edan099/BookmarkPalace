@@ -11,9 +11,11 @@ import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import com.longlong.bookmark.export.BookmarkImporter
+import com.longlong.bookmark.export.IdeBookmarkImporter
 import com.longlong.bookmark.i18n.Messages
 import java.awt.BorderLayout
 import java.awt.Dimension
+import java.awt.FlowLayout
 import javax.swing.*
 
 /**
@@ -51,14 +53,22 @@ class ImportDialog(private val project: Project) : DialogWrapper(project) {
         contentPanel.border = BorderFactory.createTitledBorder("导入内容（JSON 或粘贴 AI 返回的内容）")
         contentPanel.add(scrollPane, BorderLayout.CENTER)
 
+        // 按钮面板
+        val buttonPanel = JPanel(FlowLayout(FlowLayout.LEFT, 8, 4))
+        
         // 从文件加载按钮
-        val loadButton = JButton("从文件加载...")
+        val loadButton = JButton(if (Messages.isEnglish()) "Load from File..." else "从文件加载...")
         loadButton.addActionListener {
             loadFromFile()
         }
-
-        val buttonPanel = JPanel()
         buttonPanel.add(loadButton)
+        
+        // 从 IDE 书签导入按钮
+        val ideImportButton = JButton(if (Messages.isEnglish()) "Import from IDE Bookmarks" else "从 IDE 书签导入")
+        ideImportButton.addActionListener {
+            importFromIde()
+        }
+        buttonPanel.add(ideImportButton)
 
         contentPanel.add(buttonPanel, BorderLayout.SOUTH)
 
@@ -84,6 +94,62 @@ class ImportDialog(private val project: Project) : DialogWrapper(project) {
                 NotificationGroupManager.getInstance()
                     .getNotificationGroup("BookmarkPalace")
                     .createNotification("读取文件失败: ${e.message}", NotificationType.ERROR)
+                    .notify(project)
+            }
+        }
+    }
+
+    /**
+     * 从 IDE 自带书签导入
+     */
+    private fun importFromIde() {
+        val importer = IdeBookmarkImporter(project)
+        val count = importer.getIdeBookmarkCount()
+        
+        if (count == 0) {
+            JOptionPane.showMessageDialog(
+                contentPane,
+                if (Messages.isEnglish()) 
+                    "No line bookmarks found in IDE." 
+                else 
+                    "IDE 中没有找到行书签。",
+                if (Messages.isEnglish()) "No Bookmarks" else "无书签",
+                JOptionPane.INFORMATION_MESSAGE
+            )
+            return
+        }
+        
+        val confirm = JOptionPane.showConfirmDialog(
+            contentPane,
+            if (Messages.isEnglish())
+                "Found $count line bookmarks in IDE.\nImport them now?"
+            else
+                "在 IDE 中找到 $count 个行书签。\n现在导入吗？",
+            if (Messages.isEnglish()) "Import from IDE" else "从 IDE 导入",
+            JOptionPane.YES_NO_OPTION
+        )
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                val result = importer.importFromIde(replaceRadio.isSelected)
+                NotificationGroupManager.getInstance()
+                    .getNotificationGroup("BookmarkPalace")
+                    .createNotification(
+                        if (Messages.isEnglish())
+                            "Successfully imported ${result.bookmarkCount} bookmarks from IDE"
+                        else
+                            "成功从 IDE 导入 ${result.bookmarkCount} 个书签",
+                        NotificationType.INFORMATION
+                    )
+                    .notify(project)
+                super.doOKAction()
+            } catch (e: Exception) {
+                NotificationGroupManager.getInstance()
+                    .getNotificationGroup("BookmarkPalace")
+                    .createNotification(
+                        if (Messages.isEnglish()) "Import failed: ${e.message}" else "导入失败: ${e.message}",
+                        NotificationType.ERROR
+                    )
                     .notify(project)
             }
         }

@@ -202,6 +202,16 @@
                           relative-to-action="BookmarkPalace.Export"/>
         </action>
 
+        <!-- 从 IDE 书签导入 -->
+        <action id="BookmarkPalace.ImportFromIde"
+                class="com.longlong.bookmark.action.ImportFromIdeAction"
+                text="从 IDE 书签导入"
+                description="从 IntelliJ 自带书签导入到书签宫殿"
+                icon="/icons/import.svg">
+            <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.Import"/>
+        </action>
+
         <!-- 诊断导览图编辑器 -->
         <action id="BookmarkPalace.DiagnoseDiagramEditor"
                 class="com.longlong.bookmark.action.DiagnoseDiagramEditorAction"

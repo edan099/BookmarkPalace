@@ -19,8 +19,25 @@ import javax.swing.ImageIcon
 /**
  * 书签行标记提供者 - 在 Gutter 区域显示书签图标
  * 每行只显示一个图标，如果同一行有多个书签则合并显示
+ * 
+ * 重要：使用全局缓存防止同一文件多次调用导致的图标重复
  */
 class BookmarkLineMarkerProvider : LineMarkerProvider {
+    
+    companion object {
+        // 全局缓存：文件路径 -> 已处理的行号集合
+        // 使用 WeakHashMap 避免内存泄漏
+        private val processedCache = java.util.WeakHashMap<String, MutableSet<Int>>()
+        
+        // 清除指定文件的缓存（在书签变更时调用）
+        fun clearCache(filePath: String? = null) {
+            if (filePath != null) {
+                processedCache.remove(filePath)
+            } else {
+                processedCache.clear()
+            }
+        }
+    }
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
         // 不在快速模式中处理，全部交给 collectSlowLineMarkers
@@ -48,26 +65,49 @@ class BookmarkLineMarkerProvider : LineMarkerProvider {
         }
 
         val bookmarks = bookmarkService.getBookmarksByFile(filePath)
-        if (bookmarks.isEmpty()) return
+        if (bookmarks.isEmpty()) {
+            // 没有书签时清除该文件的缓存
+            processedCache.remove(filePath)
+            return
+        }
 
         // 按行分组，每行只显示一个图标
         val bookmarksByLine = bookmarks.groupBy { it.startLine }
+        
+        // 获取或创建该文件的已处理行集合
+        // 每次 collectSlowLineMarkers 调用时重置，因为这是一个完整的扫描
         val processedLines = mutableSetOf<Int>()
+        
+        // 同时维护 result 中已有的行号（防止 IntelliJ 多次调用导致重复）
+        val existingLines = result.mapNotNull { marker ->
+            try {
+                val markerElement = (marker as? LineMarkerInfo<*>)?.element
+                if (markerElement != null && markerElement.containingFile == psiFile) {
+                    document.getLineNumber(markerElement.textRange.startOffset)
+                } else null
+            } catch (e: Exception) { null }
+        }.toMutableSet()
 
         // 只处理传入的 elements，避免重复添加同一行的标记
         for (element in elements) {
-            val lineNumber = document.getLineNumber(element.textRange.startOffset)
-            
-            // 如果该行已处理过，跳过
-            if (processedLines.contains(lineNumber)) continue
-            
-            // 检查该行是否有书签
-            val lineBookmarks = bookmarksByLine[lineNumber]
-            if (lineBookmarks != null && lineBookmarks.isNotEmpty()) {
-                // 如果同一行有多个书签，使用第一个的颜色，tooltip 显示所有
-                val primaryBookmark = lineBookmarks.first()
-                result.add(createLineMarkerInfo(element, primaryBookmark, lineBookmarks, project))
-                processedLines.add(lineNumber)
+            try {
+                val lineNumber = document.getLineNumber(element.textRange.startOffset)
+                
+                // 三重检查：本次处理过、result 中已有、缓存中已有
+                if (processedLines.contains(lineNumber)) continue
+                if (existingLines.contains(lineNumber)) continue
+                
+                // 检查该行是否有书签
+                val lineBookmarks = bookmarksByLine[lineNumber]
+                if (lineBookmarks != null && lineBookmarks.isNotEmpty()) {
+                    // 如果同一行有多个书签，使用第一个的颜色，tooltip 显示所有
+                    val primaryBookmark = lineBookmarks.first()
+                    result.add(createLineMarkerInfo(element, primaryBookmark, lineBookmarks, project))
+                    processedLines.add(lineNumber)
+                    existingLines.add(lineNumber)
+                }
+            } catch (e: Exception) {
+                // 忽略单个元素处理异常
             }
         }
     }

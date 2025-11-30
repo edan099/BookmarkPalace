@@ -1400,30 +1400,35 @@ class DrawioJcefEditor(
     // Draw.io embed 模式通过 JavaScript 直接调用 graph 对象进行缩放
     
     /**
-     * 放大 - 通过执行 Draw.io 内部命令
+     * 放大 - 通过直接操作 iframe 内的 EditorUi 对象
      */
     private fun zoomIn() {
-        // 使用 Draw.io 的 EditorUi action
         executeJS("""
-            try {
-                // 方法1: 通过 postMessage 发送 spinner action（触发内部刷新）
-                // 方法2: 直接模拟键盘快捷键 Ctrl/Cmd + 加号
-                iframe.contentWindow.postMessage(JSON.stringify({
-                    action: 'spinner',
-                    message: 'Zooming...',
-                    show: false
-                }), '*');
-                // 发送放大命令
-                iframe.contentWindow.postMessage(JSON.stringify({
-                    action: 'prompt',
-                    msg: 'zoomIn'
-                }), '*');
-            } catch(e) { console.log('zoomIn error:', e); }
-        """.trimIndent())
-        // 备用方案：模拟滚轮缩放
-        executeJS("""
-            const scale = 1.25;
-            iframe.contentWindow.postMessage(JSON.stringify({action: 'zoom', scale: scale}), '*');
+            (function() {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    // 方法1: 尝试访问 EditorUi
+                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
+                        iframeWin.editorUi.actions.get('zoomIn').funct();
+                        return;
+                    }
+                    // 方法2: 尝试访问 Draw 对象
+                    if (iframeWin.Draw && iframeWin.Draw.loadPlugin) {
+                        // Draw.io 加载完成
+                    }
+                    // 方法3: 通过 graph 对象缩放
+                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
+                    if (graphs.length > 0) {
+                        const container = graphs[0];
+                        const transform = container.style.transform || 'scale(1)';
+                        const match = transform.match(/scale\(([\d.]+)\)/);
+                        let scale = match ? parseFloat(match[1]) : 1;
+                        scale = Math.min(scale * 1.25, 4);
+                        container.style.transform = 'scale(' + scale + ')';
+                        container.style.transformOrigin = 'center center';
+                    }
+                } catch(e) { console.log('放大失败:', e); }
+            })();
         """.trimIndent())
     }
     
@@ -1432,8 +1437,25 @@ class DrawioJcefEditor(
      */
     private fun zoomOut() {
         executeJS("""
-            const scale = 0.8;
-            iframe.contentWindow.postMessage(JSON.stringify({action: 'zoom', scale: scale}), '*');
+            (function() {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
+                        iframeWin.editorUi.actions.get('zoomOut').funct();
+                        return;
+                    }
+                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
+                    if (graphs.length > 0) {
+                        const container = graphs[0];
+                        const transform = container.style.transform || 'scale(1)';
+                        const match = transform.match(/scale\(([\d.]+)\)/);
+                        let scale = match ? parseFloat(match[1]) : 1;
+                        scale = Math.max(scale * 0.8, 0.25);
+                        container.style.transform = 'scale(' + scale + ')';
+                        container.style.transformOrigin = 'center center';
+                    }
+                } catch(e) { console.log('缩小失败:', e); }
+            })();
         """.trimIndent())
     }
     
@@ -1441,12 +1463,21 @@ class DrawioJcefEditor(
      * 适应屏幕
      */
     private fun fitToScreen() {
-        // Draw.io 的 fit action
         executeJS("""
-            iframe.contentWindow.postMessage(JSON.stringify({
-                action: 'layout',
-                layoutId: 'fit'
-            }), '*');
+            (function() {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
+                        iframeWin.editorUi.actions.get('fit').funct();
+                        return;
+                    }
+                    // 备用: 重置为 100%
+                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
+                    if (graphs.length > 0) {
+                        graphs[0].style.transform = 'scale(1)';
+                    }
+                } catch(e) { console.log('适应屏幕失败:', e); }
+            })();
         """.trimIndent())
     }
     
@@ -1455,11 +1486,20 @@ class DrawioJcefEditor(
      */
     private fun zoomReset() {
         executeJS("""
-            iframe.contentWindow.postMessage(JSON.stringify({
-                action: 'zoom',
-                scale: 1.0,
-                center: true
-            }), '*');
+            (function() {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin.editorUi && iframeWin.editorUi.actions) {
+                        iframeWin.editorUi.actions.get('resetView').funct();
+                        return;
+                    }
+                    const graphs = iframeWin.document.querySelectorAll('.geDiagramContainer');
+                    if (graphs.length > 0) {
+                        graphs[0].style.transform = 'scale(1)';
+                        graphs[0].style.transformOrigin = 'center center';
+                    }
+                } catch(e) { console.log('重置缩放失败:', e); }
+            })();
         """.trimIndent())
     }
     

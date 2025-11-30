@@ -102,7 +102,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         searchPanel.border = JBUI.Borders.empty(4)
         searchPanel.add(searchField, BorderLayout.CENTER)
 
-        // 折叠方式选择
+        // 折叠方式选择 + 操作按钮
         val groupByPanel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 0))
         groupByPanel.border = JBUI.Borders.empty(0, 4, 4, 4)
         groupByCombo.renderer = object : DefaultListCellRenderer() {
@@ -121,6 +121,38 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         groupByLabel.text = if (Messages.isEnglish()) "Group:" else "分组:"
         groupByPanel.add(groupByLabel)
         groupByPanel.add(groupByCombo)
+        
+        // 添加分隔符
+        groupByPanel.add(JSeparator(JSeparator.VERTICAL).apply { 
+            preferredSize = java.awt.Dimension(2, 20) 
+        })
+        
+        // 跳转按钮
+        val jumpButton = JButton(AllIcons.Actions.Play_forward).apply {
+            toolTipText = if (Messages.isEnglish()) "Jump to selected bookmark" else "跳转到选中书签"
+            preferredSize = java.awt.Dimension(28, 28)
+            isFocusable = false
+            addActionListener { navigateToSelectedBookmark() }
+        }
+        groupByPanel.add(jumpButton)
+        
+        // 编辑按钮
+        val editButton = JButton(AllIcons.Actions.Edit).apply {
+            toolTipText = if (Messages.isEnglish()) "Edit selected bookmark" else "编辑选中书签"
+            preferredSize = java.awt.Dimension(28, 28)
+            isFocusable = false
+            addActionListener { editSelectedBookmark() }
+        }
+        groupByPanel.add(editButton)
+        
+        // 删除按钮
+        val deleteButton = JButton(AllIcons.Actions.GC).apply {
+            toolTipText = if (Messages.isEnglish()) "Delete selected bookmark" else "删除选中书签"
+            preferredSize = java.awt.Dimension(28, 28)
+            isFocusable = false
+            addActionListener { deleteSelectedBookmark() }
+        }
+        groupByPanel.add(deleteButton)
 
         topPanel.add(searchPanel, BorderLayout.NORTH)
         topPanel.add(groupByPanel, BorderLayout.SOUTH)
@@ -345,6 +377,59 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         val node = tree.lastSelectedPathComponent as? DefaultMutableTreeNode ?: return
         val bookmark = node.userObject as? Bookmark ?: return
         bookmarkService.navigateToBookmark(bookmark)
+    }
+    
+    /**
+     * 编辑选中的书签
+     */
+    private fun editSelectedBookmark() {
+        val node = tree.lastSelectedPathComponent as? DefaultMutableTreeNode ?: return
+        val bookmark = node.userObject as? Bookmark
+        if (bookmark == null) {
+            // 如果选中的是分组节点，显示提示
+            javax.swing.JOptionPane.showMessageDialog(
+                this,
+                if (Messages.isEnglish()) "Please select a bookmark first" else "请先选择一个书签",
+                if (Messages.isEnglish()) "No Selection" else "未选择",
+                javax.swing.JOptionPane.INFORMATION_MESSAGE
+            )
+            return
+        }
+        val dialog = EditBookmarkDialog(project, bookmark)
+        if (dialog.showAndGet()) {
+            bookmarkService.updateBookmark(bookmark)
+        }
+    }
+    
+    /**
+     * 删除选中的书签
+     */
+    private fun deleteSelectedBookmark() {
+        val node = tree.lastSelectedPathComponent as? DefaultMutableTreeNode ?: return
+        val bookmark = node.userObject as? Bookmark
+        if (bookmark == null) {
+            javax.swing.JOptionPane.showMessageDialog(
+                this,
+                if (Messages.isEnglish()) "Please select a bookmark first" else "请先选择一个书签",
+                if (Messages.isEnglish()) "No Selection" else "未选择",
+                javax.swing.JOptionPane.INFORMATION_MESSAGE
+            )
+            return
+        }
+        
+        val confirm = javax.swing.JOptionPane.showConfirmDialog(
+            this,
+            if (Messages.isEnglish()) 
+                "Delete bookmark \"${bookmark.getDisplayName()}\"?" 
+            else 
+                "确定删除书签 \"${bookmark.getDisplayName()}\" 吗？",
+            if (Messages.isEnglish()) "Confirm Delete" else "确认删除",
+            javax.swing.JOptionPane.YES_NO_OPTION
+        )
+        
+        if (confirm == javax.swing.JOptionPane.YES_OPTION) {
+            bookmarkService.removeBookmark(bookmark.id)
+        }
     }
 
     private fun showPopupMenu(e: MouseEvent) {
