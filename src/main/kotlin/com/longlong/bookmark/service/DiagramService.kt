@@ -23,6 +23,31 @@ class DiagramService(private val project: Project) {
         // 如果没有导览图，创建默认导览图
         if (diagrams.isEmpty()) {
             createDefaultDiagrams()
+        } else {
+            // 迁移旧的中文名称为双语名称
+            migrateOldDiagramNames()
+        }
+    }
+    
+    /**
+     * 迁移旧的导览图名称为双语格式
+     */
+    private fun migrateOldDiagramNames() {
+        var needSave = false
+        diagrams.forEach { diagram ->
+            when (diagram.name) {
+                "主流程" -> {
+                    diagram.name = Messages.defaultMainFlowName
+                    needSave = true
+                }
+                "自定义导览" -> {
+                    diagram.name = Messages.defaultCustomFlowName
+                    needSave = true
+                }
+            }
+        }
+        if (needSave) {
+            saveToStorage()
         }
     }
 

@@ -128,10 +128,10 @@ object Messages {
     val bookmarkNode get() = get("书签节点", "Bookmark Node")
     val normalNode get() = get("普通节点", "Normal Node")
     
-    // ===== 默认导览图 =====
-    val defaultMainFlowName get() = get("主流程", "Main Flow")
+    // ===== 默认导览图（双语名称，便于所有用户理解）=====
+    val defaultMainFlowName get() = "主流程 Main Flow"
     val defaultMainFlowDesc get() = get("业务主链路导览图", "Main business flow diagram")
-    val defaultCustomFlowName get() = get("自定义导览", "Custom Diagram")
+    val defaultCustomFlowName get() = "自定义 Custom"
     val defaultCustomFlowDesc get() = get("自定义代码导览图", "Custom code navigation diagram")
     
     // ===== 导入导出 =====
