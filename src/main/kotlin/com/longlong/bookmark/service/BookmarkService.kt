@@ -14,6 +14,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
+import com.longlong.bookmark.editor.BookmarkLineMarkerProvider
 import com.longlong.bookmark.model.*
 import com.longlong.bookmark.storage.BookmarkStorage
 import java.util.concurrent.ConcurrentHashMap
@@ -457,9 +458,13 @@ class BookmarkService(private val project: Project) {
      * 刷新指定文件的 Gutter 图标
      */
     private fun refreshGutterIcons(filePath: String) {
+        // 先清除缓存，确保新书签能被显示
+        BookmarkLineMarkerProvider.clearCache(filePath)
+        
         val virtualFile = findVirtualFile(filePath) ?: return
         ApplicationManager.getApplication().invokeLater {
             val psiFile = PsiManager.getInstance(project).findFile(virtualFile) ?: return@invokeLater
+            // 使用 restart 触发重新分析
             DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
         }
     }
@@ -468,6 +473,9 @@ class BookmarkService(private val project: Project) {
      * 刷新所有打开文件的 Gutter 图标
      */
     private fun refreshAllGutterIcons() {
+        // 清除所有缓存
+        BookmarkLineMarkerProvider.clearCache()
+        
         ApplicationManager.getApplication().invokeLater {
             val openFiles = FileEditorManager.getInstance(project).openFiles
             openFiles.forEach { virtualFile ->
