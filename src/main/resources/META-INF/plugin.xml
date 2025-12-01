@@ -4,7 +4,7 @@
     
     <!-- 资源包，用于国际化 -->
     <resource-bundle>messages.LongLongBookmarkBundle</resource-bundle>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <vendor email="edan_d@qq.com">Edan</vendor>
 
     <description><![CDATA[
@@ -33,13 +33,24 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <h3>v1.0.1 - 2024.12</h3>
+    <ul>
+        <li>🆕 侧边栏内嵌预览 - 复用浏览器，切换瞬间 | Sidebar preview - reuse browser, instant switch</li>
+        <li>🔗 点击跳转优化 - 请求级拦截，内容不消失 | Click navigation - request-level interception</li>
+        <li>⚡ 编辑器模式切换 - 同Tab内切换，更快 | Editor mode switch - in-tab switch, faster</li>
+        <li>🔄 刷新按钮 - 硬刷新恢复异常状态 | Refresh button - hard refresh for recovery</li>
+        <li>🌍 双语提示 - 中英文同时显示 | Bilingual tips - Chinese & English</li>
+        <li>🐛 修复书签编辑后刷新恢复问题 | Fix bookmark edit revert on refresh</li>
+        <li>🐛 修复文件恢复后书签状态问题 | Fix bookmark status after file recovery</li>
+    </ul>
+    
     <h3>v1.0.0</h3>
     <ul>
-        <li>初始版本发布</li>
-        <li>书签核心功能：添加、删除、跳转、动态跟踪</li>
-        <li>标签系统：多标签、颜色、分组</li>
-        <li>导览图系统：Main Flow、Tag Flow、Custom Flow</li>
-        <li>导入导出：JSON、Markdown、Mermaid</li>
+        <li>初始版本发布 | Initial release</li>
+        <li>书签核心功能：添加、删除、跳转、动态跟踪 | Core: add, delete, jump, dynamic tracking</li>
+        <li>标签系统：多标签、颜色、分组 | Tags: multi-tag, color, grouping</li>
+        <li>导览图系统：Main Flow、Tag Flow、Custom Flow | Diagram: Main/Tag/Custom Flow</li>
+        <li>导入导出：JSON、Markdown、Mermaid | Export: JSON, Markdown, Mermaid</li>
     </ul>
     ]]></change-notes>
 
