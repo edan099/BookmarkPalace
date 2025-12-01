@@ -11,6 +11,11 @@ import com.longlong.bookmark.service.BookmarkService
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLifeSpanHandlerAdapter
+import org.cef.handler.CefRequestHandlerAdapter
+import org.cef.handler.CefResourceRequestHandler
+import org.cef.handler.CefResourceRequestHandlerAdapter
+import org.cef.network.CefRequest
+import org.cef.misc.BoolRef
 import javax.swing.JComponent
 
 /**
@@ -33,7 +38,7 @@ class EmbeddedDiagramViewer(
     val isReady: Boolean get() = drawioReady
     
     init {
-        setupPopupHandler()
+        setupLinkInterceptor()
         loadViewerPage()
     }
     
@@ -83,7 +88,49 @@ class EmbeddedDiagramViewer(
         }
     }
     
-    private fun setupPopupHandler() {
+    private fun setupLinkInterceptor() {
+        // 在请求级别拦截 bookmark:// 链接（关键！防止 Draw.io 导航导致消失）
+        browser.jbCefClient.addRequestHandler(object : CefRequestHandlerAdapter() {
+            override fun getResourceRequestHandler(
+                browser: CefBrowser?,
+                frame: CefFrame?,
+                request: CefRequest?,
+                isNavigation: Boolean,
+                isDownload: Boolean,
+                requestInitiator: String?,
+                disableDefaultHandling: BoolRef?
+            ): CefResourceRequestHandler? {
+                val url = request?.url ?: return null
+                
+                if (url.startsWith("bookmark://")) {
+                    logger.info("🔗 Intercepted bookmark link: $url")
+                    disableDefaultHandling?.set(true)
+                    
+                    val bookmarkId = url.removePrefix("bookmark://")
+                        .let { if (it.contains("/")) it.substringAfterLast("/") else it }
+                    
+                    ApplicationManager.getApplication().invokeLater {
+                        bookmarkService.getBookmark(bookmarkId)?.let {
+                            bookmarkService.navigateToBookmark(it)
+                        }
+                    }
+                    
+                    // 取消请求，不让 Draw.io 导航
+                    return object : CefResourceRequestHandlerAdapter() {
+                        override fun onBeforeResourceLoad(
+                            browser: CefBrowser?,
+                            frame: CefFrame?,
+                            request: CefRequest?
+                        ): Boolean {
+                            return true // 取消请求
+                        }
+                    }
+                }
+                return null
+            }
+        }, browser.cefBrowser)
+        
+        // 拦截 popup 窗口
         browser.jbCefClient.addLifeSpanHandler(object : CefLifeSpanHandlerAdapter() {
             override fun onBeforePopup(
                 browser: CefBrowser?,
@@ -100,7 +147,7 @@ class EmbeddedDiagramViewer(
                         }
                     }
                 }
-                return true
+                return true // 阻止所有 popup
             }
         }, browser.cefBrowser)
     }
