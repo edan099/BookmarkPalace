@@ -95,10 +95,23 @@ class DiagramToolWindowPanel(private val project: Project) : SimpleToolWindowPan
         }
         previewContainer.add(viewer!!.component, CARD_VIEWER)
         
+        // 预览区域：工具栏 + 预览容器
+        val previewPanel = JPanel(BorderLayout())
+        val previewToolbar = JPanel(java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 4, 2)).apply {
+            add(JLabel("📊 " + (if (Messages.isEnglish()) "Preview" else "预览")))
+            add(JButton("🔄").apply {
+                toolTipText = if (Messages.isEnglish()) "Refresh preview | 刷新预览" else "刷新预览 | Refresh"
+                preferredSize = java.awt.Dimension(32, 24)
+                addActionListener { refreshPreview() }
+            })
+        }
+        previewPanel.add(previewToolbar, BorderLayout.NORTH)
+        previewPanel.add(previewContainer, BorderLayout.CENTER)
+        
         // 使用分割面板：上方列表，下方预览
         val splitPane = JSplitPane(JSplitPane.VERTICAL_SPLIT).apply {
             topComponent = JBScrollPane(diagramList)
-            bottomComponent = previewContainer
+            bottomComponent = previewPanel
             resizeWeight = 0.3
             dividerSize = 5
         }
@@ -157,6 +170,18 @@ class DiagramToolWindowPanel(private val project: Project) : SimpleToolWindowPan
         (previewContainer.layout as CardLayout).show(previewContainer, CARD_EMPTY)
         viewer?.clear()
         currentDiagramId = null
+    }
+    
+    /**
+     * 刷新预览
+     */
+    private fun refreshPreview() {
+        val diagram = diagramList.selectedValue ?: return
+        // 从服务重新获取最新数据
+        val latestDiagram = diagramService.getDiagram(diagram.id) ?: return
+        currentDiagramId = null // 强制刷新
+        viewer?.refresh(latestDiagram)
+        (previewContainer.layout as CardLayout).show(previewContainer, CARD_VIEWER)
     }
 
     private fun refreshList() {
