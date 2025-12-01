@@ -116,8 +116,8 @@ class EmbeddedDiagramViewer(
     private fun loadViewerPage() {
         val drawioLang = if (Messages.isEnglish()) "en" else "zh"
         val loadingText = "⏳ Loading Draw.io... | 加载中..."
-        // 使用 embed 模式，添加 edit=_blank 让链接在新窗口打开（会被 popup handler 拦截）
-        val drawioUrl = "https://embed.diagrams.net/?embed=1&proto=json&spin=1&nav=1&lang=$drawioLang"
+        // 使用 embed 只读查看模式
+        val drawioUrl = "https://embed.diagrams.net/?embed=1&proto=json&spin=1&nav=1&lang=$drawioLang&chrome=0&edit=_blank"
         
         // 添加 JS 查询处理
         val jsQuery = JBCefJSQuery.create(browser)
