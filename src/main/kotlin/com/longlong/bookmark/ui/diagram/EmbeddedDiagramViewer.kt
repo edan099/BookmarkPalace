@@ -116,7 +116,8 @@ class EmbeddedDiagramViewer(
     private fun loadViewerPage() {
         val drawioLang = if (Messages.isEnglish()) "en" else "zh"
         val loadingText = "⏳ Loading Draw.io... | 加载中..."
-        val drawioUrl = "https://embed.diagrams.net/?embed=1&chrome=0&lightbox=1&nav=1&layers=1&spin=1&proto=json&lang=$drawioLang"
+        // 使用 embed 模式，添加 edit=_blank 让链接在新窗口打开（会被 popup handler 拦截）
+        val drawioUrl = "https://embed.diagrams.net/?embed=1&proto=json&spin=1&nav=1&lang=$drawioLang"
         
         // 添加 JS 查询处理
         val jsQuery = JBCefJSQuery.create(browser)
@@ -135,6 +136,7 @@ class EmbeddedDiagramViewer(
                     // 处理书签链接点击
                     val bookmarkId = request.removePrefix("bookmark://")
                         .let { if (it.contains("/")) it.substringAfterLast("/") else it }
+                    logger.info("Navigating to bookmark: $bookmarkId")
                     ApplicationManager.getApplication().invokeLater {
                         bookmarkService.getBookmark(bookmarkId)?.let {
                             bookmarkService.navigateToBookmark(it)
@@ -190,7 +192,7 @@ class EmbeddedDiagramViewer(
                 const msg = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
                 
                 // Draw.io 初始化完成
-                if ((msg.event === 'init' || msg.event === 'configure') && !ready) {
+                if ((msg.event === 'init' || msg.event === 'load' || msg.event === 'configure') && !ready) {
                     ready = true;
                     loading.style.display = 'none';
                     $readyCallback
@@ -201,14 +203,14 @@ class EmbeddedDiagramViewer(
                     }
                 }
                 
-                // 处理链接点击
-                if (msg.event === 'openLink') {
-                    const url = msg.link || msg.url;
+                // 处理链接点击（viewer 模式使用 click 事件）
+                if (msg.event === 'openLink' || msg.event === 'click') {
+                    const url = msg.link || msg.url || msg.href;
                     if (url && url.startsWith('bookmark://')) {
                         $linkCallback
                     }
                 }
-            } catch (e) {}
+            } catch (e) { console.log('Parse error:', e); }
         });
     </script>
 </body>
