@@ -73,7 +73,9 @@ class EmbeddedDiagramViewer(
     fun hardRefresh() {
         drawioReady = false
         pendingXml = null
-        browser.cefBrowser.reload()
+        currentDiagramId = null
+        // 重新加载 HTML 页面（而不是 reload，因为 reload 会丢失 jsQuery 处理器）
+        loadViewerPage()
     }
     
     /**
