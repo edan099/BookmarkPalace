@@ -50,8 +50,11 @@ import java.nio.file.Files
 class DrawioJcefEditor(
     private val project: Project,
     private val file: VirtualFile,
-    private val viewOnly: Boolean = false
+    initialViewOnly: Boolean = false
 ) : UserDataHolderBase(), FileEditor {
+    
+    // 当前模式（可切换）
+    private var viewOnly: Boolean = initialViewOnly
 
     private val logger = Logger.getInstance(DrawioJcefEditor::class.java)
     private val diagramService = DiagramService.getInstance(project)
@@ -72,6 +75,9 @@ class DrawioJcefEditor(
     private lateinit var bookmarkPanel: JPanel
     private var bookmarkPanelVisible = true
     private var lastDividerLocation = 250
+    
+    // 工具栏引用（用于模式切换时更新）
+    private lateinit var toolbarPanel: JPanel
     
     // JavaScript Bridge 用于双向通信
     private val jsQuery = JBCefJSQuery.create(browser)
@@ -233,25 +239,68 @@ class DrawioJcefEditor(
     }
 
     private fun setupUI() {
-        mainPanel.add(createToolbar(), BorderLayout.NORTH)
+        toolbarPanel = createToolbar()
+        mainPanel.add(toolbarPanel, BorderLayout.NORTH)
+        
+        // 始终创建书签面板（编辑模式需要）
+        bookmarkPanel = createBookmarkPanel()
+        
+        // 创建分割面板
+        splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT).apply {
+            leftComponent = bookmarkPanel
+            rightComponent = browser.component
+            dividerLocation = 250
+            dividerSize = 5
+            isContinuousLayout = true
+        }
         
         if (viewOnly) {
-            // 查看模式：只显示浏览器，不显示书签面板
-            mainPanel.add(browser.component, BorderLayout.CENTER)
-        } else {
-            // 编辑模式：创建书签面板
-            bookmarkPanel = createBookmarkPanel()
-            
-            // 创建主内容区域：左侧书签面板 + 右侧 Draw.io 编辑器
-            splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT).apply {
-                leftComponent = bookmarkPanel
-                rightComponent = browser.component
-                dividerLocation = 250
-                dividerSize = 5
-                isContinuousLayout = true
-            }
-            mainPanel.add(splitPane, BorderLayout.CENTER)
+            // 查看模式：只显示浏览器
+            bookmarkPanel.isVisible = false
+            splitPane.dividerLocation = 0
+            bookmarkPanelVisible = false
         }
+        
+        mainPanel.add(splitPane, BorderLayout.CENTER)
+    }
+    
+    /**
+     * 在同一编辑器内切换模式（不重新创建 browser）
+     */
+    private fun switchMode(toViewOnly: Boolean) {
+        if (viewOnly == toViewOnly) return
+        
+        // 如果从编辑模式切换，先保存
+        if (!viewOnly) {
+            saveDiagram()
+        }
+        
+        viewOnly = toViewOnly
+        
+        // 更新工具栏
+        mainPanel.remove(toolbarPanel)
+        toolbarPanel = createToolbar()
+        mainPanel.add(toolbarPanel, BorderLayout.NORTH)
+        
+        // 更新书签面板显示
+        if (viewOnly) {
+            if (bookmarkPanelVisible) {
+                lastDividerLocation = splitPane.dividerLocation
+            }
+            bookmarkPanel.isVisible = false
+            splitPane.dividerLocation = 0
+            bookmarkPanelVisible = false
+        } else {
+            bookmarkPanel.isVisible = true
+            splitPane.dividerLocation = lastDividerLocation
+            bookmarkPanelVisible = true
+        }
+        
+        // 重新加载 Draw.io（不同模式 URL 不同）
+        loadDrawio()
+        
+        mainPanel.revalidate()
+        mainPanel.repaint()
     }
     
     /**
@@ -1346,14 +1395,11 @@ class DrawioJcefEditor(
             diagramService.updateDiagram(diagram)
             logger.debug("✅ Diagram saved, switching to view mode...")
             
-            executeJS("status.textContent = '✅ 保存成功，正在切换到查看模式...'; status.style.display = 'block'; status.style.background = '#4caf50';")
+            executeJS("status.textContent = '✅ 保存成功，切换到查看模式...'; status.style.display = 'block'; status.style.background = '#4caf50';")
             
-            // 使用 invokeLater 确保在正确的写操作上下文中执行
-            javax.swing.Timer(800) {
-                ApplicationManager.getApplication().invokeLater {
-                    FileEditorManager.getInstance(project).closeFile(file)
-                    DiagramEditorProvider.openDiagramInEditor(project, diagram, viewOnly = true)
-                }
+            // 在同一编辑器内切换（不关闭重开）
+            javax.swing.Timer(500) {
+                switchMode(toViewOnly = true)
             }.apply { isRepeats = false; start() }
         } catch (e: Exception) {
             logger.error("Failed to save and switch", e)
@@ -1361,14 +1407,10 @@ class DrawioJcefEditor(
     }
     
     /**
-     * 切换到编辑模式
+     * 切换到编辑模式（在同一编辑器内）
      */
     private fun switchToEditMode() {
-        // 使用 invokeLater 确保在正确的写操作上下文中执行
-        ApplicationManager.getApplication().invokeLater {
-            FileEditorManager.getInstance(project).closeFile(file)
-            DiagramEditorProvider.openDiagramInEditor(project, diagram, viewOnly = false)
-        }
+        switchMode(toViewOnly = false)
     }
     
     /**
