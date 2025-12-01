@@ -187,6 +187,8 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         groupByLabel.text = if (Messages.isEnglish()) "Group:" else "分组:"
         groupByCombo.repaint()
         refreshTree()
+        // 更新 Tab 标题
+        BookmarkToolWindowFactory.updateTabTitles()
     }
 
     private fun createToolbar(): ActionToolbar {

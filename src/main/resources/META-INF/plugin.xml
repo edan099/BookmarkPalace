@@ -113,6 +113,7 @@
         <applicationService
                 serviceImplementation="com.longlong.bookmark.settings.DiagramEditorSettings"/>
         
+        
         <!-- 导览图标签页标题提供者 -->
         <editorTabTitleProvider
                 implementation="com.longlong.bookmark.ui.diagram.DiagramTabTitleProvider"/>
@@ -147,6 +148,7 @@
                 icon="/icons/add_bookmark.svg">
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="first"/>
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <add-to-group group-id="EditorGutterPopupMenu" anchor="first"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift B"/>
         </action>
 
@@ -157,6 +159,8 @@
                 description="快速添加/删除书签（无对话框）"
                 icon="/icons/quick_add.svg">
             <add-to-group group-id="BookmarkPalace.MainMenu" anchor="after"
+                          relative-to-action="BookmarkPalace.AddBookmark"/>
+            <add-to-group group-id="EditorGutterPopupMenu" anchor="after"
                           relative-to-action="BookmarkPalace.AddBookmark"/>
             <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt B"/>
         </action>

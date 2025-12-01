@@ -121,6 +121,14 @@ data class Bookmark(
         status = BookmarkStatus.VALID
         touch()
     }
+    
+    /**
+     * 标记为过期（位置可能已变化）
+     */
+    fun markAsOutdated() {
+        status = BookmarkStatus.OUTDATED
+        touch()
+    }
 
     /**
      * 复制书签

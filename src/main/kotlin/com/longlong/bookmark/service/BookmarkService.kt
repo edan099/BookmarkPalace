@@ -126,8 +126,36 @@ class BookmarkService(private val project: Project) {
         if (index >= 0) {
             bookmark.touch()
             bookmarks[index] = bookmark
+            
+            // 重新创建 RangeMarker（如果位置变更了）
+            recreateRangeMarker(bookmark)
+            
             saveToStorage()
             notifyBookmarkUpdated(bookmark)
+        }
+    }
+    
+    /**
+     * 重新创建书签的 RangeMarker
+     */
+    private fun recreateRangeMarker(bookmark: Bookmark) {
+        // 移除旧的 marker
+        rangeMarkers.remove(bookmark.id)?.dispose()
+        
+        // 创建新的 marker
+        val virtualFile = findVirtualFile(bookmark.filePath) ?: return
+        val document = ReadAction.compute<Document?, Throwable> {
+            FileDocumentManager.getInstance().getDocument(virtualFile)
+        } ?: return
+        
+        if (bookmark.startLine >= 0 && bookmark.startLine < document.lineCount) {
+            val endLine = minOf(bookmark.endLine, document.lineCount - 1)
+            val startOffset = document.getLineStartOffset(bookmark.startLine)
+            val endOffset = document.getLineEndOffset(endLine)
+            
+            if (endOffset >= startOffset && endOffset <= document.textLength) {
+                createRangeMarker(bookmark, document)
+            }
         }
     }
 
@@ -244,15 +272,19 @@ class BookmarkService(private val project: Project) {
 
     /**
      * 刷新书签状态（同步RangeMarker）
+     * 支持分支切换后的书签恢复
      */
     fun refreshBookmarks() {
         bookmarks.forEach { bookmark ->
             val rangeMarker = rangeMarkers[bookmark.id]
+            
+            // 首先检查 rangeMarker 是否有效
             if (rangeMarker != null && rangeMarker.isValid) {
                 val document = rangeMarker.document
                 val newStartLine = document.getLineNumber(rangeMarker.startOffset)
                 val newEndLine = document.getLineNumber(rangeMarker.endOffset)
 
+                // 同步 rangeMarker 的位置到书签
                 if (newStartLine != bookmark.startLine || newEndLine != bookmark.endLine) {
                     bookmark.startLine = newStartLine
                     bookmark.endLine = newEndLine
@@ -261,14 +293,114 @@ class BookmarkService(private val project: Project) {
                     bookmark.codeSnippet = document.getText(
                         com.intellij.openapi.util.TextRange(rangeMarker.startOffset, rangeMarker.endOffset)
                     )
-                    bookmark.markAsValid()
                 }
-            } else if (rangeMarker != null && !rangeMarker.isValid) {
-                bookmark.markAsMissing()
+                // 确保状态为有效
+                bookmark.markAsValid()
+            } else {
+                // RangeMarker 失效或不存在，先清理旧的
+                if (rangeMarker != null) {
+                    rangeMarkers.remove(bookmark.id)?.dispose()
+                }
+                // 尝试恢复书签
+                tryRecoverBookmark(bookmark)
             }
         }
         saveToStorage()
         notifyBookmarksRefreshed()
+    }
+
+    /**
+     * 尝试恢复书签位置（用于分支切换等场景）
+     * 1. 检查文件是否存在
+     * 2. 尝试在原位置恢复（无需代码匹配，行号在范围内即可）
+     * 3. 如果原位置失效，尝试通过代码片段搜索
+     */
+    private fun tryRecoverBookmark(bookmark: Bookmark) {
+        val virtualFile = findVirtualFile(bookmark.filePath)
+        if (virtualFile == null || !virtualFile.exists()) {
+            // 文件不存在，标记为失效
+            if (bookmark.status != BookmarkStatus.MISSING) {
+                bookmark.markAsMissing()
+            }
+            return
+        }
+
+        val document = ReadAction.compute<Document?, Throwable> {
+            FileDocumentManager.getInstance().getDocument(virtualFile)
+        }
+        if (document == null) {
+            if (bookmark.status != BookmarkStatus.MISSING) {
+                bookmark.markAsMissing()
+            }
+            return
+        }
+
+        // 尝试1：直接在原位置恢复（只要行号在范围内就恢复）
+        if (bookmark.startLine >= 0 && bookmark.startLine < document.lineCount) {
+            val endLine = minOf(bookmark.endLine, document.lineCount - 1)
+            val startOffset = document.getLineStartOffset(bookmark.startLine)
+            val endOffset = document.getLineEndOffset(endLine)
+            
+            if (endOffset >= startOffset && endOffset <= document.textLength) {
+                val currentCode = document.getText(com.intellij.openapi.util.TextRange(startOffset, endOffset))
+                
+                // 恢复书签
+                bookmark.startOffset = startOffset
+                bookmark.endOffset = endOffset
+                bookmark.endLine = endLine
+                bookmark.codeSnippet = currentCode
+                bookmark.markAsValid()
+                createRangeMarker(bookmark, document)
+                return
+            }
+        }
+
+        // 尝试2：在文件中搜索原始代码片段
+        val originalCode = bookmark.history.originalSnippet.ifEmpty { bookmark.codeSnippet }
+        if (originalCode.isNotBlank()) {
+            val searchCode = originalCode.trim()
+            val documentText = document.text
+            val foundIndex = documentText.indexOf(searchCode)
+            
+            if (foundIndex >= 0) {
+                // 找到匹配的代码，更新书签位置
+                val newStartOffset = foundIndex
+                val newEndOffset = foundIndex + searchCode.length
+                val newStartLine = document.getLineNumber(newStartOffset)
+                val newEndLine = document.getLineNumber(newEndOffset)
+                
+                bookmark.startLine = newStartLine
+                bookmark.endLine = newEndLine
+                bookmark.startOffset = newStartOffset
+                bookmark.endOffset = newEndOffset
+                bookmark.codeSnippet = searchCode
+                bookmark.markAsValid()
+                createRangeMarker(bookmark, document)
+                return
+            }
+        }
+        
+        // 尝试3：如果行号超出范围，尝试定位到文件末尾
+        if (document.lineCount > 0) {
+            val lastLine = document.lineCount - 1
+            val startOffset = document.getLineStartOffset(lastLine)
+            val endOffset = document.getLineEndOffset(lastLine)
+            val currentCode = document.getText(com.intellij.openapi.util.TextRange(startOffset, endOffset))
+            
+            bookmark.startLine = lastLine
+            bookmark.endLine = lastLine
+            bookmark.startOffset = startOffset
+            bookmark.endOffset = endOffset
+            bookmark.codeSnippet = currentCode
+            bookmark.markAsOutdated() // 标记为过期而非失效
+            createRangeMarker(bookmark, document)
+            return
+        }
+
+        // 都失败了，标记为失效
+        if (bookmark.status != BookmarkStatus.MISSING) {
+            bookmark.markAsMissing()
+        }
     }
 
     /**

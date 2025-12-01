@@ -216,4 +216,31 @@ object Messages {
     val syncFromBrowserTip get() = get("从桌面版或浏览器导入最新编辑内容", "Import latest edits from Desktop/Browser")
     val browserEditMode get() = get("🌐 浏览器编辑中", "🌐 Editing in Browser")
     val clickToSync get() = get("点击下方按钮导入浏览器中的编辑", "Click button below to import browser edits")
+    
+    // ===== Tab 标题 =====
+    val tabBookmarks get() = get("书签", "Bookmarks")
+    val tabDiagrams get() = get("导览图", "Diagrams")
+    
+    // ===== 书签状态 =====
+    val statusValid get() = get("✅ 状态正常", "✅ Valid")
+    val statusMissing get() = get("❌ 书签失效 - 代码已删除或移动", "❌ Missing - Code deleted or moved")
+    val statusOutdated get() = get("⚠️ 书签可能过期", "⚠️ Outdated")
+    val statusRecovered get() = get("✅ 已恢复", "✅ Recovered")
+    
+    // ===== 位置编辑 =====
+    val location get() = get("位置", "Location")
+    val filePath get() = get("文件路径", "File Path")
+    val startLine get() = get("起始行", "Start Line")
+    val endLine get() = get("结束行", "End Line")
+    val applyLocation get() = get("应用位置", "Apply Location")
+    val codePreview get() = get("代码预览", "Code Preview")
+    val locationNotFound get() = get("找不到指定位置", "Location not found")
+    val invalidLineNumber get() = get("无效的行号", "Invalid line number")
+    val fileNotFound get() = get("文件不存在", "File not found")
+    val browseFile get() = get("浏览文件...", "Browse...")
+    val goToLocation get() = get("🔍 跳转", "🔍 Go to")
+    
+    // ===== 导览图显示方式 =====
+    val openInSidebar get() = get("在侧边栏中查看", "Open in Sidebar")
+    val openInSidebarTip get() = get("在侧边栏中嵌入查看（不可编辑）", "Embed in sidebar (view only)")
 }

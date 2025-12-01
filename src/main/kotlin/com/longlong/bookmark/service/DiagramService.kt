@@ -303,4 +303,5 @@ interface DiagramChangeListener {
     fun onDiagramAdded(diagram: Diagram) {}
     fun onDiagramRemoved(diagram: Diagram) {}
     fun onDiagramUpdated(diagram: Diagram) {}
+    fun onDiagramsRefreshed() {}
 }

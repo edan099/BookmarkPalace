@@ -5,12 +5,14 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.editor.ex.EditorGutterComponentEx
 import com.intellij.openapi.project.DumbAware
 import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.service.BookmarkService
 
 /**
  * 快速添加书签 Action（无对话框）
+ * 支持编辑器右键菜单和行号槽（gutter）右键菜单
  */
 class QuickAddBookmarkAction : AnAction(), DumbAware {
 
@@ -20,8 +22,18 @@ class QuickAddBookmarkAction : AnAction(), DumbAware {
 
         val bookmarkService = BookmarkService.getInstance(project)
 
-        // 检查当前位置是否已有书签
-        val line = editor.caretModel.logicalPosition.line
+        // 如果是从 gutter 点击，获取点击的行号；否则使用光标位置
+        val gutterLine = e.getData(EditorGutterComponentEx.LOGICAL_LINE_AT_CURSOR)
+        val line = gutterLine ?: editor.caretModel.logicalPosition.line
+        
+        // 如果是从 gutter 点击，移动光标到对应行
+        if (gutterLine != null && gutterLine >= 0) {
+            val offset = editor.document.getLineStartOffset(gutterLine)
+            editor.caretModel.moveToOffset(offset)
+            val lineEndOffset = editor.document.getLineEndOffset(gutterLine)
+            editor.selectionModel.setSelection(offset, lineEndOffset)
+        }
+        
         val existingBookmark = bookmarkService.getBookmarkAt(editor, line)
 
         if (existingBookmark != null) {
