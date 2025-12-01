@@ -33,8 +33,16 @@ class DiagramToolWindowPanel(private val project: Project) : SimpleToolWindowPan
     
     // 嵌入式导览图查看器（复用同一个，避免重复创建）
     private val previewContainer = JPanel(CardLayout())
-    private val emptyLabel = JLabel(if (Messages.isEnglish()) "Select a diagram to preview" else "选择导览图进行预览", SwingConstants.CENTER)
-    private val loadingLabel = JLabel(if (Messages.isEnglish()) "⏳ Loading Draw.io..." else "⏳ 正在加载 Draw.io...", SwingConstants.CENTER)
+    private val emptyLabel = JLabel(
+        if (Messages.isEnglish()) "Select a diagram to preview | 选择导览图进行预览" 
+        else "选择导览图进行预览 | Select a diagram to preview", 
+        SwingConstants.CENTER
+    )
+    private val loadingLabel = JLabel(
+        if (Messages.isEnglish()) "⏳ Loading Draw.io... | 正在加载..." 
+        else "⏳ 正在加载 Draw.io... | Loading...", 
+        SwingConstants.CENTER
+    )
     private var viewer: EmbeddedDiagramViewer? = null
     private var currentDiagramId: String? = null
     

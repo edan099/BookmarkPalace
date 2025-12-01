@@ -115,7 +115,38 @@ class EmbeddedDiagramViewer(
     
     private fun loadViewerPage() {
         val drawioLang = if (Messages.isEnglish()) "en" else "zh"
+        val loadingText = "⏳ Loading Draw.io... | 加载中..."
         val drawioUrl = "https://embed.diagrams.net/?embed=1&chrome=0&lightbox=1&nav=1&layers=1&spin=1&proto=json&lang=$drawioLang"
+        
+        // 添加 JS 查询处理
+        val jsQuery = JBCefJSQuery.create(browser)
+        jsQuery.addHandler { request ->
+            when {
+                request == "ready" -> {
+                    drawioReady = true
+                    logger.info("Draw.io is ready!")
+                    onReadyCallback?.invoke(true)
+                    pendingXml?.let {
+                        sendXmlToDrawio(it)
+                        pendingXml = null
+                    }
+                }
+                request.startsWith("bookmark://") -> {
+                    // 处理书签链接点击
+                    val bookmarkId = request.removePrefix("bookmark://")
+                        .let { if (it.contains("/")) it.substringAfterLast("/") else it }
+                    ApplicationManager.getApplication().invokeLater {
+                        bookmarkService.getBookmark(bookmarkId)?.let {
+                            bookmarkService.navigateToBookmark(it)
+                        }
+                    }
+                }
+            }
+            null
+        }
+        
+        val readyCallback = jsQuery.inject("'ready'")
+        val linkCallback = jsQuery.inject("url")
         
         val html = """
 <!DOCTYPE html>
@@ -132,13 +163,14 @@ class EmbeddedDiagramViewer(
     </style>
 </head>
 <body>
-    <div id="loading">${if (Messages.isEnglish()) "Loading..." else "加载中..."}</div>
+    <div id="loading">$loadingText</div>
     <iframe id="drawio-frame" src="$drawioUrl"></iframe>
     
     <script>
         const iframe = document.getElementById('drawio-frame');
         const loading = document.getElementById('loading');
         let ready = false;
+        let pendingXml = null;
         
         // 暴露给 Java 调用的函数
         window.loadDiagramXml = function(xml) {
@@ -147,6 +179,8 @@ class EmbeddedDiagramViewer(
                     action: 'load',
                     xml: xml
                 }), '*');
+            } else {
+                pendingXml = xml;
             }
         };
         
@@ -155,11 +189,24 @@ class EmbeddedDiagramViewer(
             try {
                 const msg = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
                 
+                // Draw.io 初始化完成
                 if ((msg.event === 'init' || msg.event === 'configure') && !ready) {
                     ready = true;
                     loading.style.display = 'none';
-                    // 通知 Java Draw.io 已就绪
-                    window.cefQuery && window.cefQuery({request: 'ready'});
+                    $readyCallback
+                    // 加载待处理的 XML
+                    if (pendingXml) {
+                        window.loadDiagramXml(pendingXml);
+                        pendingXml = null;
+                    }
+                }
+                
+                // 处理链接点击
+                if (msg.event === 'openLink') {
+                    const url = msg.link || msg.url;
+                    if (url && url.startsWith('bookmark://')) {
+                        $linkCallback
+                    }
                 }
             } catch (e) {}
         });
@@ -168,27 +215,7 @@ class EmbeddedDiagramViewer(
 </html>
         """.trimIndent()
         
-        // 添加 JS 查询处理
-        val jsQuery = JBCefJSQuery.create(browser)
-        jsQuery.addHandler { request ->
-            if (request == "ready") {
-                drawioReady = true
-                logger.info("Draw.io is ready!")
-                onReadyCallback?.invoke(true)
-                pendingXml?.let {
-                    sendXmlToDrawio(it)
-                    pendingXml = null
-                }
-            }
-            null
-        }
-        
-        val htmlWithQuery = html.replace(
-            "window.cefQuery && window.cefQuery({request: 'ready'});",
-            jsQuery.inject("'ready'")
-        )
-        
-        browser.loadHTML(htmlWithQuery)
+        browser.loadHTML(html)
     }
     
     private fun escapeJS(s: String): String {
