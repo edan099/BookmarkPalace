@@ -116,8 +116,8 @@ class EmbeddedDiagramViewer(
     private fun loadViewerPage() {
         val drawioLang = if (Messages.isEnglish()) "en" else "zh"
         val loadingText = "⏳ Loading Draw.io... | 加载中..."
-        // 使用 embed 只读查看模式
-        val drawioUrl = "https://embed.diagrams.net/?embed=1&proto=json&spin=1&nav=1&lang=$drawioLang&chrome=0&edit=_blank"
+        // 使用 embed 只读查看模式，禁用所有导航行为
+        val drawioUrl = "https://embed.diagrams.net/?embed=1&proto=json&spin=1&nav=1&lang=$drawioLang&chrome=0"
         
         // 添加 JS 查询处理
         val jsQuery = JBCefJSQuery.create(browser)
@@ -132,14 +132,17 @@ class EmbeddedDiagramViewer(
                         pendingXml = null
                     }
                 }
-                request.startsWith("bookmark://") -> {
+                request.startsWith("navigate:") -> {
                     // 处理书签链接点击
-                    val bookmarkId = request.removePrefix("bookmark://")
-                        .let { if (it.contains("/")) it.substringAfterLast("/") else it }
-                    logger.info("Navigating to bookmark: $bookmarkId")
-                    ApplicationManager.getApplication().invokeLater {
-                        bookmarkService.getBookmark(bookmarkId)?.let {
-                            bookmarkService.navigateToBookmark(it)
+                    val url = request.removePrefix("navigate:")
+                    if (url.startsWith("bookmark://")) {
+                        val bookmarkId = url.removePrefix("bookmark://")
+                            .let { if (it.contains("/")) it.substringAfterLast("/") else it }
+                        logger.info("Navigating to bookmark: $bookmarkId")
+                        ApplicationManager.getApplication().invokeLater {
+                            bookmarkService.getBookmark(bookmarkId)?.let {
+                                bookmarkService.navigateToBookmark(it)
+                            }
                         }
                     }
                 }
@@ -148,7 +151,7 @@ class EmbeddedDiagramViewer(
         }
         
         val readyCallback = jsQuery.inject("'ready'")
-        val linkCallback = jsQuery.inject("url")
+        val linkCallback = jsQuery.inject("'navigate:' + url")
         
         val html = """
 <!DOCTYPE html>
@@ -176,6 +179,7 @@ class EmbeddedDiagramViewer(
         
         // 暴露给 Java 调用的函数
         window.loadDiagramXml = function(xml) {
+            window.lastLoadedXml = xml; // 保存以便恢复
             if (ready && iframe.contentWindow) {
                 iframe.contentWindow.postMessage(JSON.stringify({
                     action: 'load',
@@ -203,11 +207,18 @@ class EmbeddedDiagramViewer(
                     }
                 }
                 
-                // 处理链接点击（viewer 模式使用 click 事件）
+                // 处理链接点击
                 if (msg.event === 'openLink' || msg.event === 'click') {
                     const url = msg.link || msg.url || msg.href;
                     if (url && url.startsWith('bookmark://')) {
+                        // 通知 Java 处理跳转
                         $linkCallback
+                        // 延迟重新加载图表防止消失
+                        setTimeout(function() {
+                            if (window.lastLoadedXml) {
+                                window.loadDiagramXml(window.lastLoadedXml);
+                            }
+                        }, 100);
                     }
                 }
             } catch (e) { console.log('Parse error:', e); }
