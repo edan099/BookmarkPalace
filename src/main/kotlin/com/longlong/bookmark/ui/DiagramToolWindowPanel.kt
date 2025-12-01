@@ -173,15 +173,28 @@ class DiagramToolWindowPanel(private val project: Project) : SimpleToolWindowPan
     }
     
     /**
-     * 刷新预览
+     * 刷新预览（硬刷新，重新加载 Draw.io）
      */
     private fun refreshPreview() {
-        val diagram = diagramList.selectedValue ?: return
-        // 从服务重新获取最新数据
-        val latestDiagram = diagramService.getDiagram(diagram.id) ?: return
-        currentDiagramId = null // 强制刷新
-        viewer?.refresh(latestDiagram)
-        (previewContainer.layout as CardLayout).show(previewContainer, CARD_VIEWER)
+        // 显示加载状态
+        (previewContainer.layout as CardLayout).show(previewContainer, CARD_LOADING)
+        
+        // 硬刷新 Draw.io
+        viewer?.hardRefresh()
+        currentDiagramId = null
+        
+        // 延迟后重新加载数据
+        javax.swing.Timer(1500) {
+            val diagram = diagramList.selectedValue
+            if (diagram != null) {
+                val latestDiagram = diagramService.getDiagram(diagram.id)
+                if (latestDiagram != null) {
+                    viewer?.loadDiagram(latestDiagram)
+                    currentDiagramId = latestDiagram.id
+                }
+            }
+            (previewContainer.layout as CardLayout).show(previewContainer, CARD_VIEWER)
+        }.apply { isRepeats = false; start() }
     }
 
     private fun refreshList() {

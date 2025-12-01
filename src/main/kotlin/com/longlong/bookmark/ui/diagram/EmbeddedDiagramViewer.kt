@@ -68,6 +68,15 @@ class EmbeddedDiagramViewer(
     }
     
     /**
+     * 硬刷新 - 重新加载整个 Draw.io（用于恢复异常状态）
+     */
+    fun hardRefresh() {
+        drawioReady = false
+        pendingXml = null
+        browser.cefBrowser.reload()
+    }
+    
+    /**
      * 清空显示
      */
     fun clear() {
