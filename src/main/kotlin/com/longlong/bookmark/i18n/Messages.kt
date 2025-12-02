@@ -250,7 +250,6 @@ object Messages {
     
     // ===== 对话框标签 =====
     val alias get() = get("别名", "Alias")
-    val tags get() = get("标签", "Tags")
     val tagsHint get() = get("多个标签用逗号分隔", "Separate multiple tags with commas")
     val existingTags get() = get("已有标签", "Existing tags")
     
@@ -279,12 +278,12 @@ object Messages {
     val sync get() = get("同步", "Sync")
     val ctrlScrollZoom get() = get("Ctrl+滚轮缩放, 中键拖动", "Ctrl+Scroll to zoom, Middle-click to drag")
     val unnamed get() = get("\u672a\u547d\u540d\u4e66\u7b7e", "Unnamed Bookmark")
-    
-    // ===== 书签状态 =====
-    val statusValid get() = get("正常", "Valid")
-    val statusMissing get() = get("失效", "Missing")
-    val statusOutdated get() = get("过期", "Outdated")
     val untagged get() = get("未标记", "Untagged")
+    
+    // ===== 分组用简短状态名称 =====
+    val statusValidShort get() = get("正常", "Valid")
+    val statusMissingShort get() = get("失效", "Missing")
+    val statusOutdatedShort get() = get("过期", "Outdated")
     
     // ===== 撤销操作 =====
     val undo get() = get("撤销", "Undo")

@@ -371,9 +371,9 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
             val statusBookmarks = bookmarks.filter { it.status == status }
             if (statusBookmarks.isNotEmpty()) {
                 val statusName = when (status) {
-                    BookmarkStatus.VALID -> Messages.statusValid
-                    BookmarkStatus.MISSING -> Messages.statusMissing
-                    BookmarkStatus.OUTDATED -> Messages.statusOutdated
+                    BookmarkStatus.VALID -> Messages.statusValidShort
+                    BookmarkStatus.MISSING -> Messages.statusMissingShort
+                    BookmarkStatus.OUTDATED -> Messages.statusOutdatedShort
                 }
                 val statusNode = DefaultMutableTreeNode(GroupNode(statusName, status.name))
                 statusBookmarks.forEach { bookmark ->
