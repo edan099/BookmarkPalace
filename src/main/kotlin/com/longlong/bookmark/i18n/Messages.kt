@@ -243,4 +243,50 @@ object Messages {
     // ===== 导览图显示方式 =====
     val openInSidebar get() = get("在侧边栏中查看", "Open in Sidebar")
     val openInSidebarTip get() = get("在侧边栏中嵌入查看（不可编辑）", "Embed in sidebar (view only)")
+    
+    // ===== 通知消息 =====
+    val bookmarkDeleted get() = get("书签已删除", "Bookmark deleted")
+    val bookmarkAdded get() = get("书签已添加", "Bookmark added")
+    
+    // ===== 对话框标签 =====
+    val alias get() = get("别名", "Alias")
+    val tags get() = get("标签", "Tags")
+    val tagsHint get() = get("多个标签用逗号分隔", "Separate multiple tags with commas")
+    val existingTags get() = get("已有标签", "Existing tags")
+    
+    // ===== 书签列表 =====
+    val bookmarkList get() = get("📚 书签列表", "📚 Bookmarks")
+    val searchBookmarks get() = get("搜索书签...", "Search bookmarks...")
+    val noBookmarksAvailable get() = get("没有可用的书签，请先添加书签", "No bookmarks available, please add bookmarks first")
+    val hint get() = get("提示", "Hint")
+    val selectBookmarkToInsert get() = get("选择要插入的书签", "Select bookmark to insert")
+    val insertBookmarkTitle get() = get("插入书签", "Insert Bookmark")
+    val selectBookmarkToJump get() = get("选择要跳转的书签", "Select bookmark to jump")
+    val jumpToBookmarkTitle get() = get("跳转到书签", "Jump to Bookmark")
+    val noBookmarkLinks get() = get("图表中没有书签节点，请先插入书签", "No bookmark nodes in diagram, please insert bookmarks first")
+    val noBookmarkLinksTitle get() = get("无书签", "No Bookmarks")
+    val bookmarkNotExist get() = get("书签已被删除，无法跳转", "Bookmark has been deleted, cannot jump")
+    val bookmarkNotExistTitle get() = get("书签不存在", "Bookmark Not Found")
+    
+    // ===== Draw.io 编辑器状态 =====
+    val gettingCanvasContent get() = get("正在获取画布内容...", "Getting canvas content...")
+    val bookmarkInserted get() = get("✅ 书签已插入", "✅ Bookmark inserted")
+    val loadingDrawio get() = get("正在加载 Draw.io", "Loading Draw.io")
+    val drawioIframeLoaded get() = get("Draw.io iframe 已加载，等待初始化...", "Draw.io iframe loaded, waiting for initialization...")
+    val cannotLoadDrawio get() = get("❌ 无法加载 Draw.io (网络错误)", "❌ Cannot load Draw.io (network error)")
+    val refreshDrawio get() = get("刷新 Draw.io", "Refresh Draw.io")
+    val openInExternalBrowser get() = get("外部浏览器", "External Browser")
+    val sync get() = get("同步", "Sync")
+    val ctrlScrollZoom get() = get("Ctrl+滚轮缩放, 中键拖动", "Ctrl+Scroll to zoom, Middle-click to drag")
+    val unnamed get() = get("\u672a\u547d\u540d\u4e66\u7b7e", "Unnamed Bookmark")
+    
+    // ===== 书签状态 =====
+    val statusValid get() = get("正常", "Valid")
+    val statusMissing get() = get("失效", "Missing")
+    val statusOutdated get() = get("过期", "Outdated")
+    val untagged get() = get("未标记", "Untagged")
+    
+    // ===== 撤销操作 =====
+    val undo get() = get("撤销", "Undo")
+    val bookmarkRestored get() = get("书签已恢复", "Bookmark restored")
 }

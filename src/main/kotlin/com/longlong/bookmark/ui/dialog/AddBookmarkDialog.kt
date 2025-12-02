@@ -13,6 +13,7 @@ import com.intellij.util.ui.JBUI
 import com.longlong.bookmark.model.BookmarkColor
 import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.service.TagService
+import com.longlong.bookmark.ui.common.BookmarkColorRenderer
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
@@ -67,31 +68,16 @@ class AddBookmarkDialog(
 
     override fun createCenterPanel(): JComponent {
         // 颜色选择器渲染
-        colorCombo.renderer = object : DefaultListCellRenderer() {
-            override fun getListCellRendererComponent(
-                list: JList<*>?,
-                value: Any?,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ): Component {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                val color = value as? BookmarkColor
-                if (color != null) {
-                    text = "${getColorEmoji(color)} ${color.displayName}"
-                }
-                return this
-            }
-        }
+        colorCombo.renderer = BookmarkColorRenderer()
         colorCombo.selectedItem = BookmarkColor.BLUE
 
         // 标签提示
         val tagService = TagService.getInstance(project)
         val existingTags = tagService.getAllTags().joinToString(", ") { it.name }
-        tagField.toolTipText = "多个标签用逗号分隔。已有标签: $existingTags"
+        tagField.toolTipText = "${Messages.tagsHint}. ${Messages.existingTags}: $existingTags"
 
         // 代码预览
-        codePreview.border = BorderFactory.createTitledBorder("代码预览")
+        codePreview.border = BorderFactory.createTitledBorder(Messages.codePreview)
         val codeScrollPane = JBScrollPane(codePreview)
         codeScrollPane.preferredSize = Dimension(400, 100)
 
@@ -101,29 +87,15 @@ class AddBookmarkDialog(
         commentScrollPane.preferredSize = Dimension(400, 80)
 
         val panel = FormBuilder.createFormBuilder()
-            .addLabeledComponent("别名:", aliasField)
-            .addLabeledComponent("颜色:", colorCombo)
-            .addLabeledComponent("标签:", tagField)
-            .addLabeledComponent("注释:", commentScrollPane)
+            .addLabeledComponent("${Messages.alias}:", aliasField)
+            .addLabeledComponent("${Messages.color}:", colorCombo)
+            .addLabeledComponent("${Messages.tags}:", tagField)
+            .addLabeledComponent("${Messages.comment}:", commentScrollPane)
             .addComponent(codeScrollPane)
             .panel
 
         panel.border = JBUI.Borders.empty(10)
         return panel
-    }
-
-    private fun getColorEmoji(color: BookmarkColor): String {
-        return when (color) {
-            BookmarkColor.RED -> "🔴"
-            BookmarkColor.ORANGE -> "🟠"
-            BookmarkColor.YELLOW -> "🟡"
-            BookmarkColor.GREEN -> "🟢"
-            BookmarkColor.BLUE -> "🔵"
-            BookmarkColor.PURPLE -> "🟣"
-            BookmarkColor.PINK -> "💗"
-            BookmarkColor.CYAN -> "🔷"
-            BookmarkColor.GRAY -> "⚪"
-        }
     }
 
     fun getAlias(): String = aliasField.text.trim()

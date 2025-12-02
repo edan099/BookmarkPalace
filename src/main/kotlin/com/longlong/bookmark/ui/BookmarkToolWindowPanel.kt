@@ -27,6 +27,7 @@ import java.awt.FlowLayout
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.*
+import javax.swing.Timer
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeCellRenderer
 import javax.swing.tree.DefaultTreeModel
@@ -46,6 +47,11 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
 
     // 折叠方式
     private var groupBy: GroupBy = GroupBy.FILE
+    
+    // 防抖定时器，避免频繁刷新树
+    private val refreshDebounceTimer = Timer(150) { doRefreshTree() }.apply {
+        isRepeats = false
+    }
 
     enum class GroupBy {
         FILE, COLOR, TAG, STATUS;
@@ -278,7 +284,18 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         }
     }
 
+    /**
+     * 刷新树（带防抖）
+     * 快速连续调用时只执行最后一次，避免 UI 卡顿
+     */
     private fun refreshTree() {
+        refreshDebounceTimer.restart()
+    }
+    
+    /**
+     * 实际执行树刷新
+     */
+    private fun doRefreshTree() {
         val query = searchField.text.lowercase()
         val bookmarks = bookmarkService.getAllBookmarks()
             .filter { bookmark ->
@@ -341,7 +358,7 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
         // 未标记的书签
         val untaggedBookmarks = bookmarks.filter { it.tags.isEmpty() }
         if (untaggedBookmarks.isNotEmpty()) {
-            val untaggedNode = DefaultMutableTreeNode(GroupNode(if (Messages.isEnglish()) "Untagged" else "未标记", "untagged"))
+            val untaggedNode = DefaultMutableTreeNode(GroupNode(Messages.untagged, "untagged"))
             untaggedBookmarks.forEach { bookmark ->
                 untaggedNode.add(DefaultMutableTreeNode(bookmark))
             }
@@ -354,9 +371,9 @@ class BookmarkToolWindowPanel(private val project: Project) : SimpleToolWindowPa
             val statusBookmarks = bookmarks.filter { it.status == status }
             if (statusBookmarks.isNotEmpty()) {
                 val statusName = when (status) {
-                    BookmarkStatus.VALID -> "正常"
-                    BookmarkStatus.MISSING -> "失效"
-                    BookmarkStatus.OUTDATED -> "过期"
+                    BookmarkStatus.VALID -> Messages.statusValid
+                    BookmarkStatus.MISSING -> Messages.statusMissing
+                    BookmarkStatus.OUTDATED -> Messages.statusOutdated
                 }
                 val statusNode = DefaultMutableTreeNode(GroupNode(statusName, status.name))
                 statusBookmarks.forEach { bookmark ->

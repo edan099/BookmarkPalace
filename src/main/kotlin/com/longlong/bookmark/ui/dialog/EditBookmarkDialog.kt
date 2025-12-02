@@ -21,6 +21,7 @@ import com.longlong.bookmark.model.BookmarkStatus
 import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.service.BookmarkService
 import com.longlong.bookmark.service.TagService
+import com.longlong.bookmark.ui.common.BookmarkColorRenderer
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
@@ -86,30 +87,12 @@ class EditBookmarkDialog(
 
     override fun createCenterPanel(): JComponent {
         // 颜色选择器渲染
-        colorCombo.renderer = object : DefaultListCellRenderer() {
-            override fun getListCellRendererComponent(
-                list: JList<*>?,
-                value: Any?,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ): Component {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                val color = value as? BookmarkColor
-                if (color != null) {
-                    text = "${getColorEmoji(color)} ${color.displayName}"
-                }
-                return this
-            }
-        }
+        colorCombo.renderer = BookmarkColorRenderer()
 
         // 标签提示
         val tagService = TagService.getInstance(project)
         val existingTags = tagService.getAllTags().joinToString(", ") { it.name }
-        tagField.toolTipText = if (Messages.isEnglish()) 
-            "Separate multiple tags with commas. Existing: $existingTags"
-        else 
-            "多个标签用逗号分隔。已有标签: $existingTags"
+        tagField.toolTipText = "${Messages.tagsHint}. ${Messages.existingTags}: $existingTags"
 
         // 代码预览
         val codePanel = JPanel()
@@ -366,19 +349,5 @@ class EditBookmarkDialog(
         BookmarkService.getInstance(project).updateBookmark(bookmark)
 
         super.doOKAction()
-    }
-
-    private fun getColorEmoji(color: BookmarkColor): String {
-        return when (color) {
-            BookmarkColor.RED -> "🔴"
-            BookmarkColor.ORANGE -> "🟠"
-            BookmarkColor.YELLOW -> "🟡"
-            BookmarkColor.GREEN -> "🟢"
-            BookmarkColor.BLUE -> "🔵"
-            BookmarkColor.PURPLE -> "🟣"
-            BookmarkColor.PINK -> "💗"
-            BookmarkColor.CYAN -> "🔷"
-            BookmarkColor.GRAY -> "⚪"
-        }
     }
 }

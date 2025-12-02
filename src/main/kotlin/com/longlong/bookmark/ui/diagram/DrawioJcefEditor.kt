@@ -324,11 +324,11 @@ class DrawioJcefEditor(
     private fun createBookmarkPanel(): JPanel {
         val panel = JPanel(BorderLayout())
         panel.preferredSize = java.awt.Dimension(250, 0)
-        panel.border = BorderFactory.createTitledBorder("📚 书签列表")
+        panel.border = BorderFactory.createTitledBorder(Messages.bookmarkList)
         
         // 搜索框
         val searchField = JTextField().apply {
-            toolTipText = "搜索书签..."
+            toolTipText = Messages.searchBookmarks
         }
         panel.add(searchField, BorderLayout.NORTH)
         
@@ -376,7 +376,7 @@ class DrawioJcefEditor(
         })
         
         // 刷新按钮
-        val refreshButton = JButton("↻ 刷新").apply {
+        val refreshButton = JButton("↻ ${Messages.refresh}").apply {
             addActionListener { loadBookmarks(searchField.text) }
         }
         panel.add(refreshButton, BorderLayout.SOUTH)
@@ -438,7 +438,7 @@ class DrawioJcefEditor(
             
             // 刷新按钮 - 重新加载 Draw.io
             toolbar.add(JButton("🔄").apply {
-                toolTipText = if (Messages.isEnglish()) "Refresh Draw.io" else "刷新 Draw.io"
+                toolTipText = Messages.refreshDrawio
                 addActionListener { refreshDrawio() }
             })
             
@@ -447,11 +447,11 @@ class DrawioJcefEditor(
                 toolTipText = Messages.switchToEditMode
                 addActionListener { switchToEditMode() }
             })
-            toolbar.add(JButton("🌐 ${if (Messages.isEnglish()) "Open in Browser" else "外部浏览器"}").apply {
+            toolbar.add(JButton("🌐 ${Messages.openInExternalBrowser}").apply {
                 toolTipText = Messages.openInBrowserTip
                 addActionListener { openInExternalBrowser() }
             })
-            toolbar.add(JButton("↻ ${if (Messages.isEnglish()) "Sync" else "同步"}").apply {
+            toolbar.add(JButton("↻ ${Messages.sync}").apply {
                 toolTipText = Messages.syncFromBrowserTip
                 addActionListener { syncFromBrowser() }
             })
@@ -465,7 +465,7 @@ class DrawioJcefEditor(
             })
             
             // 提示：Draw.io 内部支持拖动和缩放
-            toolbar.add(JLabel("📌 ${Messages.clickNodeToJump} | Ctrl+滚轮缩放, 中键拖动").apply {
+            toolbar.add(JLabel("📌 ${Messages.clickNodeToJump} | ${Messages.ctrlScrollZoom}").apply {
                 foreground = java.awt.Color(100, 100, 100)
                 font = font.deriveFont(11f)
             })
@@ -481,7 +481,7 @@ class DrawioJcefEditor(
             
             // 刷新按钮
             toolbar.add(JButton("🔄").apply {
-                toolTipText = if (Messages.isEnglish()) "Refresh Draw.io" else "刷新 Draw.io"
+                toolTipText = Messages.refreshDrawio
                 addActionListener { refreshDrawio() }
             })
             
@@ -527,8 +527,8 @@ class DrawioJcefEditor(
         if (allBookmarks.isEmpty()) {
             javax.swing.JOptionPane.showMessageDialog(
                 mainPanel,
-                "没有可用的书签，请先添加书签",
-                "提示",
+                Messages.noBookmarksAvailable,
+                Messages.hint,
                 javax.swing.JOptionPane.INFORMATION_MESSAGE
             )
             return
@@ -538,8 +538,8 @@ class DrawioJcefEditor(
         val bookmarkNames = allBookmarks.map { "${it.getDisplayName()} (${it.getFileName()}:${it.startLine + 1})" }.toTypedArray()
         val selected = javax.swing.JOptionPane.showInputDialog(
             mainPanel,
-            "选择要插入的书签：",
-            "插入书签",
+            Messages.selectBookmarkToInsert,
+            Messages.insertBookmarkTitle,
             javax.swing.JOptionPane.QUESTION_MESSAGE,
             null,
             bookmarkNames,
@@ -620,8 +620,8 @@ class DrawioJcefEditor(
             ApplicationManager.getApplication().invokeLater {
                 javax.swing.JOptionPane.showMessageDialog(
                     mainPanel,
-                    "图表中没有书签节点，请先插入书签",
-                    "无书签",
+                    Messages.noBookmarkLinks,
+                    Messages.noBookmarkLinksTitle,
                     javax.swing.JOptionPane.INFORMATION_MESSAGE
                 )
             }
@@ -638,8 +638,8 @@ class DrawioJcefEditor(
             ApplicationManager.getApplication().invokeLater {
                 javax.swing.JOptionPane.showMessageDialog(
                     mainPanel,
-                    "书签已被删除，无法跳转",
-                    "书签不存在",
+                    Messages.bookmarkNotExist,
+                    Messages.bookmarkNotExistTitle,
                     javax.swing.JOptionPane.WARNING_MESSAGE
                 )
             }
@@ -658,8 +658,8 @@ class DrawioJcefEditor(
                 
                 val selected = javax.swing.JOptionPane.showInputDialog(
                     mainPanel,
-                    "选择要跳转的书签：",
-                    "跳转到书签",
+                    Messages.selectBookmarkToJump,
+                    Messages.jumpToBookmarkTitle,
                     javax.swing.JOptionPane.QUESTION_MESSAGE,
                     null,
                     options,

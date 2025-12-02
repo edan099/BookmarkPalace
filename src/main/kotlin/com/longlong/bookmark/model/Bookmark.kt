@@ -1,5 +1,6 @@
 package com.longlong.bookmark.model
 
+import com.longlong.bookmark.i18n.Messages
 import java.util.UUID
 
 /**
@@ -14,16 +15,32 @@ enum class BookmarkStatus {
 /**
  * 书签颜色枚举
  */
-enum class BookmarkColor(val displayName: String, val hexColor: String) {
-    RED("红色", "#E53935"),
-    ORANGE("橙色", "#FB8C00"),
-    YELLOW("黄色", "#FDD835"),
-    GREEN("绿色", "#43A047"),
-    BLUE("蓝色", "#1E88E5"),
-    PURPLE("紫色", "#8E24AA"),
-    PINK("粉色", "#D81B60"),
-    CYAN("青色", "#00ACC1"),
-    GRAY("灰色", "#757575");
+enum class BookmarkColor(val hexColor: String) {
+    RED("#E53935"),
+    ORANGE("#FB8C00"),
+    YELLOW("#FDD835"),
+    GREEN("#43A047"),
+    BLUE("#1E88E5"),
+    PURPLE("#8E24AA"),
+    PINK("#D81B60"),
+    CYAN("#00ACC1"),
+    GRAY("#757575");
+
+    /**
+     * 获取本地化的颜色显示名称
+     */
+    val displayName: String
+        get() = when (this) {
+            RED -> Messages.colorRed
+            ORANGE -> Messages.colorOrange
+            YELLOW -> Messages.colorYellow
+            GREEN -> Messages.colorGreen
+            BLUE -> Messages.colorBlue
+            PURPLE -> Messages.colorPurple
+            PINK -> Messages.colorPink
+            CYAN -> Messages.colorCyan
+            GRAY -> Messages.colorGray
+        }
 
     companion object {
         fun fromName(name: String): BookmarkColor {
@@ -68,7 +85,7 @@ data class Bookmark(
      */
     fun getDisplayName(): String {
         return alias.ifBlank { 
-            codeSnippet.lines().firstOrNull()?.trim()?.take(30) ?: "未命名书签"
+            codeSnippet.lines().firstOrNull()?.trim()?.take(30) ?: Messages.unnamed
         }
     }
 

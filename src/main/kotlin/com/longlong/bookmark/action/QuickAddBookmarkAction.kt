@@ -1,5 +1,7 @@
 package com.longlong.bookmark.action
 
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
@@ -37,14 +39,16 @@ class QuickAddBookmarkAction : AnAction(), DumbAware {
         val existingBookmark = bookmarkService.getBookmarkAt(editor, line)
 
         if (existingBookmark != null) {
-            // 如果已有书签，则删除
-            bookmarkService.removeBookmark(existingBookmark.id)
-            showNotification(project, "书签已删除", NotificationType.INFORMATION)
+            // 如果已有书签，则删除（带撤销功能）
+            val deletedBookmark = bookmarkService.removeBookmark(existingBookmark.id)
+            if (deletedBookmark != null) {
+                showDeleteNotificationWithUndo(project, deletedBookmark, bookmarkService)
+            }
         } else {
             // 添加新书签
             val bookmark = bookmarkService.quickAddBookmark(editor)
             if (bookmark != null) {
-                showNotification(project, "书签已添加: ${bookmark.getDisplayName()}", NotificationType.INFORMATION)
+                showNotification(project, "${Messages.bookmarkAdded}: ${bookmark.getDisplayName()}", NotificationType.INFORMATION)
             }
         }
     }
@@ -60,5 +64,26 @@ class QuickAddBookmarkAction : AnAction(), DumbAware {
             .getNotificationGroup("BookmarkPalace")
             .createNotification(content, type)
             .notify(project)
+    }
+    
+    /**
+     * 显示带撤销按钮的删除通知
+     */
+    private fun showDeleteNotificationWithUndo(
+        project: com.intellij.openapi.project.Project,
+        deletedBookmark: com.longlong.bookmark.model.Bookmark,
+        bookmarkService: BookmarkService
+    ) {
+        val notification = NotificationGroupManager.getInstance()
+            .getNotificationGroup("BookmarkPalace")
+            .createNotification(Messages.bookmarkDeleted, NotificationType.INFORMATION)
+        
+        notification.addAction(NotificationAction.createSimple(Messages.undo) {
+            bookmarkService.restoreBookmark(deletedBookmark)
+            notification.expire()
+            showNotification(project, Messages.bookmarkRestored, NotificationType.INFORMATION)
+        })
+        
+        notification.notify(project)
     }
 }

@@ -15,6 +15,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import com.longlong.bookmark.editor.BookmarkLineMarkerProvider
+import com.longlong.bookmark.i18n.Messages
 import com.longlong.bookmark.model.*
 import com.longlong.bookmark.storage.BookmarkStorage
 import java.util.concurrent.ConcurrentHashMap
@@ -109,13 +110,28 @@ class BookmarkService(private val project: Project) {
 
     /**
      * 删除书签
+     * @return 被删除的书签，可用于撤销操作
      */
-    fun removeBookmark(bookmarkId: String) {
-        val bookmark = bookmarks.find { it.id == bookmarkId } ?: return
+    fun removeBookmark(bookmarkId: String): Bookmark? {
+        val bookmark = bookmarks.find { it.id == bookmarkId } ?: return null
         bookmarks.remove(bookmark)
         rangeMarkers.remove(bookmarkId)?.dispose()
         saveToStorage()
         notifyBookmarkRemoved(bookmark)
+        return bookmark
+    }
+    
+    /**
+     * 恢复已删除的书签（撤销删除）
+     */
+    fun restoreBookmark(bookmark: Bookmark) {
+        if (bookmarks.none { it.id == bookmark.id }) {
+            bookmarks.add(bookmark)
+            // 尝试重新创建 RangeMarker
+            tryRecoverBookmark(bookmark)
+            saveToStorage()
+            notifyBookmarkAdded(bookmark)
+        }
     }
 
     /**
@@ -562,7 +578,7 @@ class BookmarkService(private val project: Project) {
         return if (firstLine.length > 30) {
             firstLine.take(30) + "..."
         } else {
-            firstLine.ifBlank { "书签" }
+            firstLine.ifBlank { Messages.bookmark }
         }
     }
 

@@ -1,11 +1,26 @@
 package com.longlong.bookmark.storage
 
 import com.intellij.openapi.components.*
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.util.xmlb.XmlSerializerUtil
 import com.intellij.util.xmlb.annotations.Tag
 import com.intellij.util.xmlb.annotations.XCollection
 import com.longlong.bookmark.model.*
+
+private val LOG = Logger.getInstance("BookmarkStorage")
+
+/**
+ * 安全解析枚举值，失败时记录日志并返回默认值
+ */
+private inline fun <reified T : Enum<T>> safeEnumValueOf(value: String, default: T): T {
+    return try {
+        enumValueOf<T>(value)
+    } catch (e: IllegalArgumentException) {
+        LOG.warn("Invalid enum value '$value' for ${T::class.simpleName}, using default: $default")
+        default
+    }
+}
 
 /**
  * 书签存储状态
@@ -62,7 +77,7 @@ class BookmarkStorageItem {
             color = BookmarkColor.fromName(color),
             tags = tags.toMutableList(),
             comment = comment,
-            status = try { BookmarkStatus.valueOf(status) } catch (e: Exception) { BookmarkStatus.VALID },
+            status = safeEnumValueOf(status, BookmarkStatus.VALID),
             history = BookmarkHistory(
                 originalSnippet = originalSnippet,
                 originalStartLine = originalStartLine,
@@ -198,7 +213,7 @@ class DiagramStorageItem {
             id = id,
             name = name,
             description = description,
-            type = try { DiagramType.valueOf(type) } catch (e: Exception) { DiagramType.CUSTOM_FLOW },
+            type = safeEnumValueOf(type, DiagramType.CUSTOM_FLOW),
             nodes = nodes.map { it.toNode() }.toMutableList(),
             connections = connections.map { it.toConnection() }.toMutableList(),
             createdAt = createdAt,
@@ -252,7 +267,7 @@ class DiagramNodeStorageItem {
     fun toNode(): DiagramNode {
         return DiagramNode(
             id = id, bookmarkId = bookmarkId, label = label, description = description,
-            shape = try { NodeShape.valueOf(shape) } catch (e: Exception) { NodeShape.RECTANGLE },
+            shape = safeEnumValueOf(shape, NodeShape.RECTANGLE),
             x = x, y = y, width = width, height = height, color = color,
             textColor = textColor, borderColor = borderColor, fontSize = fontSize, borderWidth = borderWidth
         )
@@ -288,7 +303,7 @@ class DiagramConnectionStorageItem {
     fun toConnection(): DiagramConnection {
         return DiagramConnection(
             id = id, sourceNodeId = sourceNodeId, targetNodeId = targetNodeId,
-            connectionType = try { ConnectionType.valueOf(connectionType) } catch (e: Exception) { ConnectionType.ARROW },
+            connectionType = safeEnumValueOf(connectionType, ConnectionType.ARROW),
             label = label, lineColor = lineColor, lineWidth = lineWidth, fontSize = fontSize, curveOffset = curveOffset
         )
     }
